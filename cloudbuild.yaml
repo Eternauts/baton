@@ -23,10 +23,13 @@ steps:
       - '--allow-unauthenticated'
       - '--service-account'
       - 'baton-api@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--set-env-vars'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,TRANSCRIBE_ENGINE=chirp3,SPEECH_LOCATION=us,GEMINI_MODEL=gemini-2.5-flash,AEGIS_API_KEY=dev-key'
 
 images:
   - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/baton-api:$COMMIT_SHA'
 
 substitutions:
   _REGION: 'asia-southeast1'
-  _REPO_NAME: 'baton-repo'
+  _REPO_NAME: 'baton'
+

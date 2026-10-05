@@ -1,7 +1,10 @@
 from __future__ import annotations
 import json
 import os
+import re
 from typing import List, Dict, Any, Optional
+from google.cloud import discoveryengine
+
 from app.models import Fact, SafetyConflict, GapQuestion, BriefItem, HandoverBrief, Severity
 
 
@@ -42,7 +45,7 @@ class GeminiAgentService:
                     f"Content:\n{full_text}"
                 )
                 res = self.client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-1.5-pro",
                     contents=prompt,
                 )
                 # Attempt json parse
@@ -150,3 +153,65 @@ class GeminiAgentService:
             items=items,
             completion_status="PENDING" if conflicts else "COMPLETED"
         )
+
+
+class RegexDocumentService:
+    """
+    Connects to Vertex AI Document Storage (Discovery Engine) and
+    makes inferences based on a regex-based approach over the retrieved documents.
+    """
+    def __init__(self, project_id: str = None, location: str = "global", data_store_id: str = None):
+        self.project_id = project_id or os.getenv("GOOGLE_CLOUD_PROJECT")
+        self.location = location
+        self.data_store_id = data_store_id or os.getenv("VERTEX_DATA_STORE_ID")
+        
+        try:
+            if self.project_id and self.data_store_id:
+                self.client = discoveryengine.SearchServiceClient()
+            else:
+                self.client = None
+        except Exception as e:
+            print(f"[RegexDocumentService] Warning: Failed to init discovery engine client: {e}")
+            self.client = None
+
+    def search_and_extract(self, query: str, regex_pattern: str) -> List[str]:
+        """
+        Search document storage in Vertex AI and extract matching patterns using regex.
+        """
+        if not self.client or not self.project_id or not self.data_store_id:
+            print("[RegexDocumentService] Client not initialized or missing project/data_store_id.")
+            return []
+
+        serving_config = self.client.serving_config_path(
+            project=self.project_id,
+            location=self.location,
+            data_store=self.data_store_id,
+            serving_config="default_config",
+        )
+
+        request = discoveryengine.SearchRequest(
+            serving_config=serving_config,
+            query=query,
+            page_size=5,
+        )
+
+        extracted_results = []
+        try:
+            response = self.client.search(request)
+            pattern = re.compile(regex_pattern)
+            
+            for result in response.results:
+                # Assuming document snippet is the text containing the data
+                # For more complex documents, this might parse result.document.derived_struct_data
+                doc_text = ""
+                if getattr(result.document, "derived_struct_data", None):
+                    doc_text = json.dumps(dict(result.document.derived_struct_data))
+                
+                # Apply regex approach
+                matches = pattern.findall(doc_text)
+                extracted_results.extend(matches)
+
+            return extracted_results
+        except Exception as e:
+            print(f"[RegexDocumentService] Error searching Vertex AI Document Storage: {e}")
+            return []
