@@ -74,3 +74,34 @@ class HandoverSession(BaseModel):
     questions: List[GapQuestion] = Field(default_factory=list)
     brief: Optional[HandoverBrief] = None
     created_at: str
+
+
+class Capsule(BaseModel):
+    """Offline shift capsule extracted on-device via Gemma E4B."""
+    uuid: str = Field(..., description="Unique client-generated UUID for the offline capsule")
+    timestamp: str = Field(..., description="ISO8601 timestamp of log creation on mobile")
+    category: str = Field(..., description="Operational category e.g. EQUIPMENT, ISOLATION, PERMIT, ALARM")
+    asset_tag: str = Field(..., description="Industrial asset identifier e.g. P-201B, V-102")
+    asserted_state: str = Field(..., description="Physical state asserted by technician e.g. ISOLATED, OPEN, RUNNING")
+    text_transcript: str = Field(..., description="On-device Gemma E4B transcript or manual technician note")
+    intent_severity: Severity = Field(default=Severity.INFO, description="Intent severity classified by on-device model")
+
+
+class CapsuleBatchSyncRequest(BaseModel):
+    """Batch payload sent by Flutter app upon reconnecting from airplane mode."""
+    capsules: List[Capsule] = Field(..., max_length=50, description="List of offline captured capsules (up to 50)")
+    device_id: Optional[str] = Field(default="edge-flutter-01", description="Mobile device identifier")
+    operator_id: Optional[str] = Field(default="TECH-OFFLINE", description="Outgoing technician identifier")
+    shift_name: Optional[str] = Field(default="SHIFT-A", description="Shift identifier")
+    unit_name: Optional[str] = Field(default="UNIT-01", description="Unit or plant module")
+
+
+class CapsuleBatchSyncResponse(BaseModel):
+    """Wrapper response for batch sync (returns 200 OK with conflict details to prevent client crash)."""
+    sync_status: str = Field(..., description="'SUCCESS' or 'CONFLICT_DETECTED'")
+    synced_count: int = Field(..., description="Total number of processed capsules")
+    has_critical_conflict: bool = Field(..., description="True if any critical rule (R1/R2) was violated")
+    conflicts: List[SafetyConflict] = Field(default_factory=list, description="List of detected safety conflicts")
+    summary: str = Field(..., description="AI or deterministic safety brief summary")
+    processed_at: str = Field(..., description="UTC timestamp of synchronization")
+

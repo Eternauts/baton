@@ -18,20 +18,27 @@ class SafetyRulesEngine:
         conflicts: List[SafetyConflict] = []
         fact_map = {f.id: f for f in facts}
 
+        def _get_status_str(val: Any) -> str:
+            if isinstance(val, dict):
+                return str(val.get("status", "")).upper()
+            return str(val).upper()
+
         # Rule R1: Isolation Mismatch (Logged Isolated, but Plant Active)
         for fact in facts:
-            if "ISOLATED" in fact.text.upper() or "REMOVED" in fact.text.upper():
+            fact_upper = fact.text.upper()
+            if "ISOLAT" in fact_upper or "REMOVED" in fact_upper or "LOCK" in fact_upper:
                 # Extract potential tag name or look in plant state
                 for tag, state in plant_state.items():
-                    if tag.lower() in fact.text.lower() and state in ["OPEN", "RUNNING", "ACTIVE", "ENERGIZED"]:
+                    status_str = _get_status_str(state)
+                    if tag.lower() in fact.text.lower() and status_str in ["OPEN", "RUNNING", "ACTIVE", "ENERGIZED"]:
                         conflicts.append(
                             SafetyConflict(
                                 id=f"CONF-R1-{len(conflicts)+1}",
                                 rule_id="R1",
                                 title=f"Isolation Mismatch: {tag}",
-                                description=f"Log states '{fact.text}', but live plant state for {tag} is physically '{state}'.",
+                                description=f"Log/capsule asserts '{fact.text}', but live DCS state for {tag} is physically '{status_str}' (telemetry: {state}).",
                                 severity=Severity.CRITICAL,
-                                evidence_ids=[fact.id, f"PLANT-{tag}"]
+                                evidence_ids=[fact.id, f"DCS-{tag}"]
                             )
                         )
 
@@ -64,9 +71,13 @@ class SafetyRulesEngine:
 
         # Rule R3: Bypassed Safety Interlock
         for tag, state in plant_state.items():
-            if "BYPASS" in tag.upper() and state in [True, "TRUE", "ACTIVE", "BYPASSED"]:
+            status_str = _get_status_str(state)
+            is_bypassed = ("BYPASS" in tag.upper() or "BYPASS" in status_str) and (
+                status_str in ["TRUE", "ACTIVE", "BYPASSED", "OPEN"] or state is True
+            )
+            if is_bypassed:
                 matching_fact = next((f for f in facts if tag.lower() in f.text.lower()), None)
-                ev_ids = [f"PLANT-{tag}"]
+                ev_ids = [f"DCS-{tag}"]
                 if matching_fact:
                     ev_ids.append(matching_fact.id)
 
