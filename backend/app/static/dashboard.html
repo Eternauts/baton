@@ -824,6 +824,11 @@
       document.getElementById('count-tab-sync').textContent = stats.total_syncs ?? 2;
       document.getElementById('count-tab-anom').textContent = stats.total_anomalies ?? 4;
 
+      if (stats.firestore_ledger_count !== undefined) {
+        const commitEl = document.getElementById('ledger-commit-count');
+        if (commitEl) commitEl.textContent = `${stats.firestore_ledger_count} entries`;
+      }
+
       // 2. Check for new incoming event to trigger animation
       const events = data.events || [];
       if (events.length > 0) {

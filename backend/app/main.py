@@ -53,6 +53,82 @@ app.add_middleware(
 
 # In-memory storage repository for MVP (transits to Firestore on GCP)
 sessions_db: Dict[str, HandoverSession] = {}
+firestore_db = None
+try:
+    from google.cloud import firestore
+    firestore_project = os.getenv("GOOGLE_CLOUD_PROJECT", "ai-builder-cup-2026-509818")
+    firestore_db = firestore.Client(project=firestore_project)
+    logger.info(f"Initialized Firestore Client for project: {firestore_project}")
+except Exception as e:
+    firestore_db = None
+    logger.warning(f"Firestore Client could not be initialized: {e}. Running in in-memory fallback mode.")
+
+
+def save_handover_session(session: HandoverSession):
+    """Save handover session to in-memory cache and asynchronously persist to Firestore."""
+    sessions_db[session.id] = session
+    if firestore_db:
+        try:
+            firestore_db.collection("handover_sessions").document(session.id).set(session.model_dump())
+        except Exception as e:
+            logger.warning(f"Failed to persist session {session.id} to Firestore: {e}")
+
+
+def get_handover_session(session_id: str) -> Optional[HandoverSession]:
+    """Retrieve handover session from in-memory cache, or hydrate from Firestore."""
+    if session_id in sessions_db:
+        return sessions_db[session_id]
+    if firestore_db:
+        try:
+            doc = firestore_db.collection("handover_sessions").document(session_id).get()
+            if doc.exists:
+                session = HandoverSession(**doc.to_dict())
+                sessions_db[session_id] = session
+                return session
+        except Exception as e:
+            logger.warning(f"Failed to fetch session {session_id} from Firestore: {e}")
+    return None
+
+
+def save_batch_sync_event(event_dict: Dict[str, Any]):
+    """Persist batch sync event to Firestore batch_sync_events collection."""
+    if firestore_db:
+        try:
+            firestore_db.collection("batch_sync_events").document(event_dict["id"]).set(event_dict)
+        except Exception as e:
+            logger.warning(f"Failed to persist batch event {event_dict.get('id')} to Firestore: {e}")
+
+
+def get_firestore_ledger_count() -> int:
+    """Return count of persisted audit documents in Firestore."""
+    if firestore_db:
+        try:
+            docs = list(firestore_db.collection("batch_sync_events").limit(100).stream())
+            return len(docs)
+        except Exception:
+            pass
+    return len(dashboard_telemetry_stream)
+
+
+def hydrate_telemetry_from_firestore():
+    """Hydrate in-memory telemetry stream from Firestore on container cold start."""
+    if not firestore_db:
+        return
+    try:
+        docs = list(
+            firestore_db.collection("batch_sync_events")
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+            .limit(15)
+            .stream()
+        )
+        if docs:
+            dashboard_telemetry_stream.clear()
+            for d in docs:
+                dashboard_telemetry_stream.append(d.to_dict())
+            logger.info(f"Hydrated {len(docs)} batch sync events from Firestore.")
+    except Exception as e:
+        logger.warning(f"Could not hydrate telemetry from Firestore: {e}")
+
 
 rules_engine = SafetyRulesEngine()
 agent_service = GeminiAgentService()
@@ -213,6 +289,9 @@ dashboard_telemetry_stream.appendleft({
     "processed_at": datetime.now(timezone.utc).isoformat()
 })
 
+# Hydrate in-memory telemetry stream from persistent Firestore ledger on boot
+hydrate_telemetry_from_firestore()
+
 
 
 
@@ -283,9 +362,9 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
     else:
         summary = summary_results[0]
 
-    # 5. Record session in memory for supervisor audit and dashboard tracking
+    # 5. Record session in memory & persist to Firestore for supervisor audit
     session_id = f"batch-{uuid.uuid4().hex[:8]}"
-    sessions_db[session_id] = HandoverSession(
+    session = HandoverSession(
         id=session_id,
         unit_name=req.unit_name or "UNIT-01",
         shift_name=req.shift_name or "SHIFT-A",
@@ -297,9 +376,10 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
         brief=None,
         created_at=now_utc
     )
+    save_handover_session(session)
 
-    # 6. Push to real-time dashboard telemetry stream for Cloud Control Room
-    dashboard_telemetry_stream.appendleft({
+    # 6. Push to real-time dashboard telemetry stream & persist to Firestore event ledger
+    event_dict = {
         "id": session_id,
         "device_id": req.device_id or "pixel7-edge-unit1",
         "operator_id": req.operator_id or "TECH-OFFLINE",
@@ -313,7 +393,9 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
         "conflicts": [c.model_dump() for c in conflicts],
         "summary": summary,
         "processed_at": now_utc
-    })
+    }
+    dashboard_telemetry_stream.appendleft(event_dict)
+    save_batch_sync_event(event_dict)
 
     # Push to in-memory cloud activity log
     cloud_activity_log.appendleft({
@@ -398,6 +480,12 @@ async def get_dashboard_stream():
         "safety_engine": {
             "status": "enforcing",
             "rules": ["R1 Isolation Mismatch", "R2 SIMOPS", "R3 Interlock Bypass", "R4 Expired Permit"]
+        },
+        "firestore": {
+            "status": "persisted" if firestore_db else "in_memory",
+            "database": "(default)",
+            "location": "asia-southeast1",
+            "ledger_count": get_firestore_ledger_count()
         }
     }
 
@@ -411,7 +499,8 @@ async def get_dashboard_stream():
             "total_transcriptions": len(transcriptions),
             "total_anomalies": len(anomalies),
             "total_syncs": len(syncs),
-            "total_substantive": len(combined_logs)
+            "total_substantive": len(combined_logs),
+            "firestore_ledger_count": get_firestore_ledger_count()
         },
         "total_events": len(dashboard_telemetry_stream),
         "server_time": datetime.now(timezone.utc).isoformat(),
@@ -482,15 +571,16 @@ def start_handover(req: HandoverRequest):
         created_at=datetime.utcnow().isoformat()
     )
 
-    sessions_db[session_id] = session
+    save_handover_session(session)
     return session
 
 
 @app.get("/api/handover/{session_id}", response_model=HandoverSession)
 def get_session(session_id: str):
-    if session_id not in sessions_db:
+    session = get_handover_session(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
-    return sessions_db[session_id]
+    return session
 
 
 class AnswerPayload(BaseModel):
@@ -499,10 +589,9 @@ class AnswerPayload(BaseModel):
 
 @app.post("/api/handover/{session_id}/answer", response_model=HandoverSession)
 def submit_answers(session_id: str, payload: AnswerPayload):
-    if session_id not in sessions_db:
+    session = get_handover_session(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
-
-    session = sessions_db[session_id]
 
     # Process answers and convert to facts
     for q in session.questions:
@@ -523,7 +612,7 @@ def submit_answers(session_id: str, payload: AnswerPayload):
     # (If operator clarifies, some conflicts may be resolved)
     session.brief = agent_service.compose_brief(session.conflicts, session.facts, "en")
     session.status = "READY_FOR_BRIEF"
-    sessions_db[session_id] = session
+    save_handover_session(session)
 
     return session
 
@@ -535,10 +624,10 @@ class AcknowledgePayload(BaseModel):
 
 @app.post("/api/handover/{session_id}/acknowledge", response_model=HandoverSession)
 def acknowledge_item(session_id: str, payload: AcknowledgePayload):
-    if session_id not in sessions_db:
+    session = get_handover_session(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
 
-    session = sessions_db[session_id]
     if not session.brief:
         raise HTTPException(status_code=400, detail="Brief not generated yet")
 
@@ -553,16 +642,16 @@ def acknowledge_item(session_id: str, payload: AcknowledgePayload):
     if not found:
         raise HTTPException(status_code=404, detail="Brief item not found")
 
-    sessions_db[session_id] = session
+    save_handover_session(session)
     return session
 
 
 @app.post("/api/handover/{session_id}/complete")
 def complete_handover(session_id: str):
-    if session_id not in sessions_db:
+    session = get_handover_session(session_id)
+    if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
 
-    session = sessions_db[session_id]
     if not session.brief:
         raise HTTPException(status_code=400, detail="Brief not available")
 
@@ -580,7 +669,7 @@ def complete_handover(session_id: str):
 
     session.status = "COMPLETED"
     session.brief.completion_status = "COMPLETED"
-    sessions_db[session_id] = session
+    save_handover_session(session)
 
     return {"status": "COMPLETED", "message": "Handover responsibility successfully transferred."}
 
