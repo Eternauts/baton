@@ -9,7 +9,7 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -26,13 +26,22 @@
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
+          },
+          animation: {
+            'flow': 'flowPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            flowPulse: {
+              '0%, 100%': { opacity: '0.4', transform: 'scale(0.98)' },
+              '50%': { opacity: '1', transform: 'scale(1.02)' },
+            }
           }
         }
       }
     }
   </script>
   <style>
-    /* Sleek minimalist scrollbar */
+    /* Minimalist Dark Scrollbar */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -47,45 +56,55 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #475569;
     }
+    .flow-connector {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.2) 0%, rgba(245, 165, 36, 0.4) 50%, rgba(16, 185, 129, 0.2) 100%);
+      background-size: 200% 100%;
+      animation: gradientMove 2.5s linear infinite;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500/20 selection:text-amber-400">
 
   <!-- ============================================================== -->
-  <!-- TOP NAVIGATION: MINIMALIST & SPACIOUS                          -->
+  <!-- TOP NAVIGATION                                                 -->
   <!-- ============================================================== -->
-  <header class="border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl px-8 py-5 sticky top-0 z-40">
+  <header class="border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl px-8 py-4 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6">
       
-      <!-- Logo & System Tagline -->
+      <!-- Brand & Tagline -->
       <div class="flex items-center gap-4">
-        <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </div>
         <div>
-          <div class="flex items-center gap-3">
-            <h1 class="text-xl font-bold tracking-tight text-white">Baton</h1>
-            <span class="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">CONTROL ROOM</span>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-lg font-bold tracking-tight text-white">Baton</h1>
+            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">CONTROL ROOM</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE OBSERVABILITY</span>
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Shift-Handover Safety Guardian • Real-Time Edge Ingestion</p>
+          <p class="text-xs text-slate-400 mt-0.5">Shift-Handover Guardian • Cloud Run Log Parser & Telemetry Flow</p>
         </div>
       </div>
 
-      <!-- Quick Demo Triggers & Status -->
+      <!-- Live Cloud Health & Demo Simulation Buttons -->
       <div class="flex items-center gap-3 text-xs">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 font-mono text-[11px]">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 font-mono text-[11px] border border-slate-800">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Cloud Run • asia-southeast1</span>
         </div>
 
-        <button onclick="triggerSimulatedSync('conflict')" class="px-3.5 py-2 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-medium transition flex items-center gap-2 shadow-sm">
+        <button onclick="triggerSimulatedSync('conflict')" class="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-medium transition flex items-center gap-1.5 shadow-sm">
           <span class="w-2 h-2 rounded-full bg-red-400"></span>
           Simulate Conflict (R1)
         </button>
 
-        <button onclick="triggerSimulatedSync('clean')" class="px-3.5 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 font-medium transition flex items-center gap-2 shadow-sm">
+        <button onclick="triggerSimulatedSync('clean')" class="px-3 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 font-medium transition flex items-center gap-1.5 shadow-sm">
           <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           Simulate Nominal
         </button>
@@ -95,78 +114,167 @@
   </header>
 
   <!-- ============================================================== -->
-  <!-- HORIZONTAL VERTEX AI AGENT RIBBON                              -->
+  <!-- ANIMATED CLOUD RESOURCE FLOW TOPOLOGY                          -->
   <!-- ============================================================== -->
-  <div class="border-b border-slate-800/50 bg-slate-900/30 px-8 py-3">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
-      <div class="flex items-center gap-6 flex-wrap">
-        <!-- Agent 1 -->
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">Safety Gate Agent</span>
-          <span class="text-slate-500">|</span>
-          <span class="text-slate-400 text-[11px]">Deterministic Rules (R1–R4)</span>
-        </div>
-        <!-- Agent 2 -->
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">Equipment Grounding</span>
-          <span class="text-slate-500">|</span>
-          <span class="text-slate-400 text-[11px]">Vertex AI Search & Telemetry</span>
-        </div>
-        <!-- Agent 3 -->
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">Comms & Briefing</span>
-          <span class="text-slate-500">|</span>
-          <span class="text-amber-400 text-[11px]">Gemini 2.5 Flash</span>
-        </div>
+  <section class="border-b border-slate-800/50 bg-slate-900/40 px-8 py-5">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-3 text-xs font-mono text-slate-400">
+        <span class="font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Cloud Resource Orchestration Flow
+        </span>
+        <span class="text-[11px] text-slate-500 font-mono">Noise Filter: Active (Excludes 2s health polling)</span>
       </div>
-      <div class="flex items-center gap-2 text-[11px]">
-        <span class="text-slate-500">Live Polling:</span>
-        <span class="text-emerald-400 font-semibold" id="poll-indicator">2s Active</span>
+
+      <!-- 4-Node Animated Pipeline Flow -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+        
+        <!-- Node 1: Mobile Edge -->
+        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-white truncate">Mobile Edge</span>
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            </div>
+            <p class="text-[11px] font-mono text-cyan-400" id="flow-edge-stat">Dart/3.13 (Flutter)</p>
+            <p class="text-[10px] text-slate-400">Gemma E4B Offline Notes</p>
+          </div>
+        </div>
+
+        <!-- Node 2: Cloud Run Gateway -->
+        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-white truncate">Cloud Run API</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <p class="text-[11px] font-mono text-emerald-400" id="flow-run-stat">baton-api • Active</p>
+            <p class="text-[10px] text-slate-400" id="flow-run-sub">asia-southeast1</p>
+          </div>
+        </div>
+
+        <!-- Node 3: Vertex AI & Gemini -->
+        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-white truncate">Gemini 2.5 Flash</span>
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            </div>
+            <p class="text-[11px] font-mono text-amber-400" id="flow-gemini-stat">Multimodal AI Active</p>
+            <p class="text-[10px] text-slate-400">Vertex AI • us-central1</p>
+          </div>
+        </div>
+
+        <!-- Node 4: Safety Rules Engine -->
+        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0 text-red-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-white truncate">Safety Engine</span>
+              <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+            </div>
+            <p class="text-[11px] font-mono text-red-400" id="flow-rules-stat">R1–R4 Enforced</p>
+            <p class="text-[10px] text-slate-400">Deterministic DCS Telemetry</p>
+          </div>
+        </div>
+
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- ============================================================== -->
-  <!-- MAIN LAYOUT: BREATHABLE 2-COLUMN VIEW                          -->
+  <!-- MAIN LAYOUT                                                    -->
   <!-- ============================================================== -->
   <main class="max-w-7xl w-full mx-auto p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
     <!-- ------------------------------------------------------------ -->
-    <!-- LEFT: EDGE TELEMETRY STREAM (Clean Feed)                      -->
+    <!-- LEFT: SUBSTANTIVE CLOUD RUN LOGS & ACTIVITY STREAM (5 Cols)   -->
     <!-- ------------------------------------------------------------ -->
     <section class="lg:col-span-5 flex flex-col gap-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Edge Telemetry Stream</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Offline voice notes flushed from Gemma E4B devices</p>
+      
+      <!-- Feed Header with Filter Pills -->
+      <div class="flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Cloud Run Activity Stream</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Parsed from Google Cloud Logging • Real-time</p>
+          </div>
+          <span id="log-count-badge" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
+            0 Substantive
+          </span>
         </div>
-        <span id="stream-count-badge" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
-          0 Events
-        </span>
+
+        <!-- Filter Pills -->
+        <div class="flex items-center gap-1.5 text-xs font-mono flex-wrap">
+          <button onclick="setLogFilter('all')" id="tab-all" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition">
+            All (<span id="count-all">0</span>)
+          </button>
+          <button onclick="setLogFilter('anomalies')" id="tab-anomalies" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-red-400 border border-slate-800 transition">
+            ⚠️ Incidents (<span id="count-anomalies">0</span>)
+          </button>
+          <button onclick="setLogFilter('transcribe')" id="tab-transcribe" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition">
+            🎙️ Audio (<span id="count-transcribe">0</span>)
+          </button>
+          <button onclick="setLogFilter('sync')" id="tab-sync" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition">
+            🛡️ Syncs (<span id="count-sync">0</span>)
+          </button>
+        </div>
       </div>
 
-      <!-- Feed Container (No harsh borders, generous spacing) -->
-      <div id="telemetry-feed" class="space-y-3.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
-        <!-- Empty State Placeholder -->
-        <div id="feed-empty-state" class="p-12 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
-          <p class="font-medium text-slate-400">Awaiting Edge Data</p>
-          <p class="mt-1 text-slate-500 text-[11px]">Mobile sync payloads will appear here in real time.</p>
+      <!-- Feed Container -->
+      <div id="cloud-log-feed" class="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+        <!-- Placeholder -->
+        <div id="feed-empty-state" class="p-10 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
+          <p class="font-medium text-slate-400">Parsing Cloud Run Logs...</p>
+          <p class="mt-1 text-slate-500 text-[11px]">Connecting to Cloud Logging API in asia-southeast1...</p>
         </div>
       </div>
     </section>
 
     <!-- ------------------------------------------------------------ -->
-    <!-- RIGHT: SAFETY GATE HERO & EXECUTIVE BRIEF (The Focal Point)   -->
+    <!-- RIGHT: INCIDENT INVESTIGATOR & SAFETY HERO (7 Cols)           -->
     <!-- ------------------------------------------------------------ -->
     <section class="lg:col-span-7 flex flex-col gap-6">
 
-      <!-- FOCAL POINT: SAFETY GATE ALERT (Massive & Instantly Readable) -->
+      <!-- INCIDENT INVESTIGATOR BANNER (Appears if Cloud Run 500/400 occurred) -->
+      <div id="incident-banner" class="rounded-2xl p-6 bg-red-950/40 border border-red-500/30 transition-all flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-red-400">Cloud Run Incident Detected</span>
+          </div>
+          <span id="incident-time" class="text-xs font-mono text-slate-400">Recent</span>
+        </div>
+
+        <h4 id="incident-title" class="text-base font-bold text-red-300">
+          HTTP 500 Internal Server Error Logged on /api/transcribe
+        </h4>
+
+        <p id="incident-desc" class="text-xs text-slate-300 leading-relaxed font-sans">
+          Client <code class="text-amber-400 bg-slate-900 px-1 py-0.5 rounded font-mono">Dart/3.13 (dart:io)</code> sent audio payload that triggered an audio stream format exception. The system has automatically recovered and applied magic-byte header adaptation for Gemini 2.5 Flash.
+        </p>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs font-mono text-slate-400">
+          <span>Client IP: <b class="text-slate-300" id="incident-ip">49.37.178.244</b></span>
+          <span class="text-emerald-400 font-semibold">Status: Handled & Logged</span>
+        </div>
+      </div>
+
+      <!-- FOCAL POINT: SAFETY GATE ALERT -->
       <div id="safety-hero-card" class="rounded-2xl p-8 transition-all duration-300 bg-red-950/30 border border-red-500/20">
         <div class="flex items-start gap-5">
-          <!-- Massive Warning Icon -->
+          <!-- Big Icon -->
           <div id="hero-icon-container" class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
             <svg id="hero-icon-alert" class="w-9 h-9 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -179,7 +287,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1.5">
               <span id="hero-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300">
-                SAFETY GATE GATED
+                SAFETY GATE LOCKED
               </span>
               <span id="hero-rule-id" class="text-xs font-mono text-slate-400">Rule R1</span>
             </div>
@@ -189,9 +297,9 @@
               CRITICAL: Physical Telemetry Mismatch on P-201B
             </h3>
 
-            <!-- Clean, Jargon-Free Description -->
+            <!-- Plain English description -->
             <p id="hero-description" class="text-sm text-slate-300 mt-2.5 leading-relaxed">
-              Operator logged pump as ISOLATED, but live plant SCADA sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.
+              Operator logged pump as ISOLATED, but plant sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.
             </p>
 
             <!-- Key Fact Pills -->
@@ -205,7 +313,7 @@
       </div>
 
       <!-- GEMINI 2.5 FLASH EXECUTIVE BRIEF -->
-      <div class="rounded-2xl p-8 bg-slate-900/50 border border-slate-800/60 flex flex-col gap-4">
+      <div class="rounded-2xl p-7 bg-slate-900/50 border border-slate-800/60 flex flex-col gap-3.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">
             <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
@@ -218,7 +326,7 @@
           </span>
         </div>
 
-        <blockquote id="agent-summary-text" class="text-base text-slate-200 leading-relaxed font-sans italic border-l-2 border-amber-500/60 pl-4 my-1">
+        <blockquote id="agent-summary-text" class="text-sm text-slate-200 leading-relaxed font-sans italic border-l-2 border-amber-500/60 pl-4 my-1">
           "Awaiting edge telemetry flush to compose shift-handover intelligence brief..."
         </blockquote>
 
@@ -233,12 +341,12 @@
   </main>
 
   <!-- ============================================================== -->
-  <!-- MODAL: VIEW RAW PAYLOAD (Zero Noise on Main Screen)            -->
+  <!-- MODAL: INSPECT LOG ENTRY PAYLOAD                               -->
   <!-- ============================================================== -->
   <div id="json-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
       <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-        <h3 class="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider" id="modal-title">Raw Capsule Payload</h3>
+        <h3 class="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider" id="modal-title">Cloud Run Log Details</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 transition">
           ✕ CLOSE
         </button>
@@ -250,93 +358,158 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- JAVASCRIPT: REALTIME POLLING & CLEAN RENDERING ENGINE          -->
+  <!-- JAVASCRIPT: LOG PARSING, POLLING & DYNAMIC RENDERING           -->
   <!-- ============================================================== -->
   <script>
-    let activeEvents = [];
-    let selectedEventId = null;
+    let currentFilter = 'all';
+    let allCloudLogs = [];
+    let anomalies = [];
+    let transcriptions = [];
+    let shiftEvents = [];
+    let selectedLogId = null;
 
-    async function pollDashboardStream() {
+    async function pollDashboard() {
       try {
         const response = await fetch('/api/v1/dashboard/stream');
         if (!response.ok) return;
         const data = await response.json();
 
-        if (data.events && data.events.length > 0) {
-          const hasNew = activeEvents.length === 0 || data.events[0].id !== activeEvents[0].id;
-          activeEvents = data.events;
+        allCloudLogs = data.cloud_logs || [];
+        anomalies = data.anomalies || [];
+        transcriptions = data.transcriptions || [];
+        shiftEvents = data.events || [];
 
-          if (hasNew || !selectedEventId) {
-            selectedEventId = activeEvents[0].id;
-            renderUI();
+        // Update counts
+        document.getElementById('count-all').textContent = allCloudLogs.length;
+        document.getElementById('count-anomalies').textContent = anomalies.length;
+        document.getElementById('count-transcribe').textContent = transcriptions.length;
+        document.getElementById('count-sync').textContent = shiftEvents.length;
+
+        // Update Cloud Flow Stats
+        if (data.cloud_flow) {
+          const flow = data.cloud_flow;
+          if (flow.edge) {
+            document.getElementById('flow-edge-stat').textContent = `${transcriptions.length} Voice Notes • Dart/3.13`;
+          }
+          if (flow.cloud_run) {
+            document.getElementById('flow-run-stat').textContent = `Requests: ${allCloudLogs.length} • baton-api`;
+            document.getElementById('flow-run-sub').textContent = anomalies.length > 0 ? `${anomalies.length} Incident(s) Logged` : 'All Systems Healthy';
           }
         }
+
+        renderLogsFeed();
+        renderIncidentBanner();
+        renderSafetyHero();
+        renderBrief();
       } catch (err) {
-        console.warn('Dashboard polling error:', err);
+        console.warn('Dashboard poll error:', err);
       }
     }
 
-    function renderUI() {
-      renderFeed();
-      renderHero();
-      renderBrief();
+    function setLogFilter(filter) {
+      currentFilter = filter;
+      ['all', 'anomalies', 'transcribe', 'sync'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === filter) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition';
+        }
+      });
+      renderLogsFeed();
     }
 
-    // 1. Render Left Feed
-    function renderFeed() {
-      const container = document.getElementById('telemetry-feed');
-      const countBadge = document.getElementById('stream-count-badge');
+    function renderLogsFeed() {
+      const container = document.getElementById('cloud-log-feed');
+      const countBadge = document.getElementById('log-count-badge');
 
-      if (!activeEvents || activeEvents.length === 0) {
-        document.getElementById('feed-empty-state').classList.remove('hidden');
-        countBadge.textContent = '0 Events';
+      let filtered = allCloudLogs;
+      if (currentFilter === 'anomalies') filtered = anomalies;
+      else if (currentFilter === 'transcribe') filtered = transcriptions;
+      else if (currentFilter === 'sync') filtered = allCloudLogs.filter(l => l.category === 'BATCH_SYNC');
+
+      countBadge.textContent = `${filtered.length} Substantive`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
+            <p>No substantive events in this view</p>
+          </div>
+        `;
         return;
       }
 
-      document.getElementById('feed-empty-state').classList.add('hidden');
-      countBadge.textContent = `${activeEvents.length} Events`;
+      container.innerHTML = filtered.map(log => {
+        const isAnomaly = log.category === 'ANOMALY' || (log.status && log.status >= 400);
+        const isTranscribe = log.category === 'TRANSCRIBE';
+        const isSync = log.category === 'BATCH_SYNC';
 
-      container.innerHTML = activeEvents.map(evt => {
-        const isSelected = evt.id === selectedEventId;
-        const isConflict = evt.has_critical_conflict || evt.sync_status === 'CONFLICT_DETECTED';
-        const transcript = (evt.capsules && evt.capsules[0]) ? evt.capsules[0].text_transcript : 'Shift assertion logged.';
-        const timeFormatted = new Date(evt.processed_at || evt.timestamp).toLocaleTimeString();
+        let badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">200 OK</span>`;
+        if (isAnomaly) {
+          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 text-red-400 border border-red-500/40">${log.status || 500} ERROR</span>`;
+        } else if (log.status === 409) {
+          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-500/30">409 GATED</span>`;
+        }
+
+        let icon = '⚡';
+        if (isTranscribe) icon = '🎙️';
+        else if (isAnomaly) icon = '⚠️';
+        else if (isSync) icon = '🛡️';
+
+        const timeFormatted = new Date(log.timestamp).toLocaleTimeString();
+        const clientDesc = log.user_agent ? log.user_agent.split(' ')[0] : (log.ip || 'Cloud Client');
 
         return `
-          <div onclick="selectEvent('${evt.id}')" class="p-5 rounded-2xl transition duration-150 cursor-pointer ${
-            isSelected 
-              ? 'bg-slate-900 border-l-4 border-amber-500 shadow-lg' 
-              : 'bg-slate-900/40 hover:bg-slate-900/80 border-l-4 border-transparent'
+          <div onclick="selectLog('${log.id}')" class="p-4 rounded-xl transition duration-150 cursor-pointer ${
+            isAnomaly 
+              ? 'bg-red-950/20 border-l-4 border-red-500 hover:bg-red-950/30' 
+              : 'bg-slate-900/40 hover:bg-slate-900/80 border-l-4 border-slate-700'
           }">
-            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2">
-              <span class="font-semibold text-slate-200">${evt.device_id || 'pixel7-edge'}</span>
+            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-1.5">
+              <span class="flex items-center gap-1.5 font-semibold text-slate-200">
+                <span>${icon}</span>
+                <span>${log.method || 'POST'} ${log.url || '/api/transcribe'}</span>
+              </span>
               <span>${timeFormatted}</span>
             </div>
 
-            <p class="text-sm text-slate-300 font-sans line-clamp-1 mb-3">
-              "${transcript}"
+            <p class="text-xs text-slate-300 font-sans line-clamp-2 mb-2 leading-relaxed">
+              ${log.summary}
             </p>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
-              <span class="text-xs font-mono ${isConflict ? 'text-red-400 font-semibold' : 'text-emerald-400'}">
-                ${isConflict ? '● Conflict Flagged' : '● Nominal'}
-              </span>
-
-              <button onclick="event.stopPropagation(); viewRawJson('${evt.id}')" class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition">
-                View Payload
-              </button>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px] font-mono">
+              <span class="text-slate-400">Client: <b class="text-amber-400">${clientDesc}</b></span>
+              <div class="flex items-center gap-2">
+                ${badge}
+                <button onclick="event.stopPropagation(); viewRawJson('${log.id}')" class="px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                  Details
+                </button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // 2. Render Hero Safety Gate
-    function renderHero() {
-      const evt = activeEvents.find(e => e.id === selectedEventId) || activeEvents[0];
-      if (!evt) return;
+    // Render Incident Banner
+    function renderIncidentBanner() {
+      const banner = document.getElementById('incident-banner');
+      if (anomalies.length > 0) {
+        banner.classList.remove('hidden');
+        const latestAnomaly = anomalies[0];
+        document.getElementById('incident-time').textContent = new Date(latestAnomaly.timestamp).toLocaleTimeString();
+        document.getElementById('incident-title').textContent = `${latestAnomaly.status || 500} Incident on ${latestAnomaly.url || '/api/transcribe'}`;
+        document.getElementById('incident-ip').textContent = latestAnomaly.ip || latestAnomaly.user_agent || '49.37.178.244';
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
 
-      const isConflict = evt.has_critical_conflict || evt.sync_status === 'CONFLICT_DETECTED';
+    // Render Hero Safety Gate
+    function renderSafetyHero() {
+      const topEvent = shiftEvents[0] || {};
+      const isConflict = topEvent.has_critical_conflict || topEvent.sync_status === 'CONFLICT_DETECTED';
+
       const heroCard = document.getElementById('safety-hero-card');
       const iconAlert = document.getElementById('hero-icon-alert');
       const iconCheck = document.getElementById('hero-icon-check');
@@ -356,15 +529,13 @@
         badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300';
         badge.textContent = 'SAFETY GATE LOCKED';
 
-        const topConflict = (evt.conflicts && evt.conflicts[0]) || {};
+        const topConflict = (topEvent.conflicts && topEvent.conflicts[0]) || {};
         ruleId.textContent = topConflict.rule_id ? `Rule ${topConflict.rule_id}` : 'Rule R1';
 
         title.className = 'text-2xl font-extrabold tracking-tight text-red-400 leading-snug';
         title.textContent = topConflict.title ? `CRITICAL: ${topConflict.title}` : 'CRITICAL: Physical Telemetry Mismatch on P-201B';
 
-        desc.textContent = topConflict.description 
-          ? topConflict.description 
-          : 'Operator asserted pump is ISOLATED, but plant sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.';
+        desc.textContent = topConflict.description || 'Operator asserted pump is ISOLATED, but physical SCADA sensors report it OPEN (12.4 bar). Shift transfer locked.';
 
         facts.innerHTML = `
           <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Asset: <b class="text-amber-400">P-201B</b></span>
@@ -379,50 +550,47 @@
 
         badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300';
         badge.textContent = 'ALL SYSTEMS NOMINAL';
-        ruleId.textContent = 'All Rules Verified';
+        ruleId.textContent = 'Rules Reconciled';
 
         title.className = 'text-2xl font-extrabold tracking-tight text-emerald-400 leading-snug';
         title.textContent = 'NOMINAL: Telemetry Reconciled Across All Assets';
 
-        desc.textContent = 'All physical states reported by field technicians match live control room sensors. Unit is fully approved for shift handover.';
+        desc.textContent = 'All physical states reported by field technicians match live control room sensors. Unit clear for shift transfer.';
 
         facts.innerHTML = `
           <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Equipment Status: <b class="text-emerald-400">100% Verified</b></span>
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Permit Status: <b class="text-emerald-400">Clean</b></span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Active Work Permits: <b class="text-emerald-400">Nominal</b></span>
         `;
       }
     }
 
-    // 3. Render Brief Card
+    // Render Gemini Brief
     function renderBrief() {
-      const evt = activeEvents.find(e => e.id === selectedEventId) || activeEvents[0];
-      if (!evt) return;
-
+      const topEvent = shiftEvents[0] || {};
       const summaryText = document.getElementById('agent-summary-text');
       const citations = document.getElementById('brief-citations');
       const timestamp = document.getElementById('brief-timestamp');
 
-      summaryText.textContent = evt.summary 
-        ? `"${evt.summary}"`
+      summaryText.textContent = topEvent.summary 
+        ? `"${topEvent.summary}"`
         : `"All units reconciled. Plant parameters nominal for incoming shift."`;
 
-      citations.textContent = (evt.conflicts && evt.conflicts.length > 0)
-        ? `Citations: ${evt.conflicts.flatMap(c => c.evidence_ids || []).slice(0, 2).join(', ')}`
+      citations.textContent = (topEvent.conflicts && topEvent.conflicts.length > 0)
+        ? `Citations: ${topEvent.conflicts.flatMap(c => c.evidence_ids || []).slice(0, 2).join(', ')}`
         : 'Telemetry Reconciled';
 
-      timestamp.textContent = new Date(evt.processed_at || evt.timestamp).toLocaleTimeString();
+      timestamp.textContent = new Date(topEvent.processed_at || topEvent.timestamp || new Date()).toLocaleTimeString();
     }
 
-    function selectEvent(id) {
-      selectedEventId = id;
-      renderUI();
+    function selectLog(id) {
+      selectedLogId = id;
     }
 
     function viewRawJson(id) {
-      const evt = activeEvents.find(e => e.id === id);
-      if (!evt) return;
-      document.getElementById('modal-title').textContent = `Payload // ${evt.id}`;
-      document.getElementById('modal-json').textContent = JSON.stringify(evt, null, 2);
+      const log = allCloudLogs.find(l => l.id === id) || anomalies.find(l => l.id === id);
+      if (!log) return;
+      document.getElementById('modal-title').textContent = `Log Entry // ${log.category || 'EVENT'}`;
+      document.getElementById('modal-json').textContent = JSON.stringify(log, null, 2);
       document.getElementById('json-modal').classList.remove('hidden');
     }
 
@@ -473,15 +641,15 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        await pollDashboardStream();
+        await pollDashboard();
       } catch (e) {
         console.error('Simulation error:', e);
       }
     }
 
-    // Initial poll and recurring loop
-    pollDashboardStream();
-    setInterval(pollDashboardStream, 2000);
+    // Start poll loop
+    pollDashboard();
+    setInterval(pollDashboard, 2000);
   </script>
 </body>
 </html>
