@@ -9,8 +9,8 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -26,393 +26,267 @@
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
-          },
-          animation: {
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'slide-in': 'slideIn 0.3s ease-out forwards',
-          },
-          keyframes: {
-            slideIn: {
-              '0%': { opacity: '0', transform: 'translateY(-10px)' },
-              '100%': { opacity: '1', transform: 'translateY(0)' },
-            }
           }
         }
       }
     }
   </script>
   <style>
-    /* Custom Industrial Scrollbar */
+    /* Sleek minimalist scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: #09090b;
+      background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: #27272a;
-      border-radius: 3px;
+      background: #334155;
+      border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #3f3f46;
-    }
-    .glow-amber {
-      box-shadow: 0 0 20px -3px rgba(245, 165, 36, 0.25);
-    }
-    .glow-red {
-      box-shadow: 0 0 25px -2px rgba(239, 68, 68, 0.35);
-    }
-    .glow-emerald {
-      box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+      background: #475569;
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500/20 selection:text-amber-400">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500/20 selection:text-amber-400">
 
   <!-- ============================================================== -->
-  <!-- TOP NAVIGATION: BATON CLOUD ORCHESTRATION HUB                  -->
+  <!-- TOP NAVIGATION: MINIMALIST & SPACIOUS                          -->
   <!-- ============================================================== -->
-  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-3.5">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+  <header class="border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl px-8 py-5 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6">
       
-      <!-- Logo & Industrial Tagline -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center justify-center glow-amber">
-          <!-- Industrial Baton Guardian Shield / Baton SVG -->
-          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Logo & System Tagline -->
+      <div class="flex items-center gap-4">
+        <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold tracking-wider text-white uppercase">Baton Cloud Orchestration Hub</h1>
-            <span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">DEMO CONTROL ROOM</span>
+          <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold tracking-tight text-white">Baton</h1>
+            <span class="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">CONTROL ROOM</span>
           </div>
-          <p class="text-xs text-zinc-400 font-mono">Shift-Handover Safety Guardian // Edge-to-Cloud Realtime Telemetry</p>
+          <p class="text-xs text-slate-400 mt-0.5">Shift-Handover Safety Guardian • Real-Time Edge Ingestion</p>
         </div>
       </div>
 
-      <!-- Telemetry Health & GCP Region Badges -->
-      <div class="flex items-center flex-wrap gap-2.5 text-xs font-mono">
-        <!-- Live Cloud Run Indicator -->
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800">
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
-          <span class="text-zinc-300 font-medium">Cloud Run:</span>
-          <span class="text-emerald-400 font-semibold">asia-southeast1</span>
+      <!-- Quick Demo Triggers & Status -->
+      <div class="flex items-center gap-3 text-xs">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 font-mono text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Cloud Run • asia-southeast1</span>
         </div>
 
-        <!-- Gemini Model Pill -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400">
-          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-          </svg>
-          <span class="text-zinc-300">Model:</span>
-          <span class="font-bold text-amber-400" id="badge-model">gemini-2.5-flash</span>
-        </div>
-
-        <!-- Interactive Demo Simulation Buttons -->
-        <button onclick="triggerSimulatedSync('conflict')" class="px-3 py-1.5 rounded-md bg-red-950/40 hover:bg-red-900/50 border border-red-500/40 text-red-300 font-medium transition duration-150 flex items-center gap-1.5 shadow-sm hover:border-red-400">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <button onclick="triggerSimulatedSync('conflict')" class="px-3.5 py-2 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-medium transition flex items-center gap-2 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-red-400"></span>
           Simulate Conflict (R1)
         </button>
-        <button onclick="triggerSimulatedSync('clean')" class="px-3 py-1.5 rounded-md bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 text-emerald-300 font-medium transition duration-150 flex items-center gap-1.5 shadow-sm hover:border-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+
+        <button onclick="triggerSimulatedSync('clean')" class="px-3.5 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 font-medium transition flex items-center gap-2 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           Simulate Nominal
         </button>
       </div>
+
     </div>
   </header>
 
   <!-- ============================================================== -->
-  <!-- MAIN 3-PANE GRID LAYOUT                                        -->
+  <!-- HORIZONTAL VERTEX AI AGENT RIBBON                              -->
   <!-- ============================================================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
-
-    <!-- ------------------------------------------------------------ -->
-    <!-- PANE 1: EDGE TELEMETRY STREAM (Left - 4 Cols)                -->
-    <!-- ------------------------------------------------------------ -->
-    <section class="lg:col-span-4 flex flex-col rounded-xl bg-zinc-900/60 border border-zinc-800 shadow-xl overflow-hidden backdrop-blur-sm">
-      <!-- Pane Header -->
-      <div class="px-4 py-3.5 border-b border-zinc-800 bg-zinc-900/90 flex items-center justify-between">
+  <div class="border-b border-slate-800/50 bg-slate-900/30 px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
+      <div class="flex items-center gap-6 flex-wrap">
+        <!-- Agent 1 -->
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-200">Edge Telemetry Stream</h2>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">Safety Gate Agent</span>
+          <span class="text-slate-500">|</span>
+          <span class="text-slate-400 text-[11px]">Deterministic Rules (R1–R4)</span>
         </div>
+        <!-- Agent 2 -->
         <div class="flex items-center gap-2">
-          <span class="text-[10px] font-mono text-zinc-400">Poll: 2s</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping" id="stream-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">Equipment Grounding</span>
+          <span class="text-slate-500">|</span>
+          <span class="text-slate-400 text-[11px]">Vertex AI Search & Telemetry</span>
         </div>
-      </div>
-
-      <!-- Feed Subtitle / Stats Bar -->
-      <div class="px-4 py-2 bg-zinc-950/70 border-b border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-        <span>Gemma E4B Offline Flushes</span>
-        <span id="stream-count-badge" class="px-1.5 py-0.5 rounded bg-zinc-800 text-amber-400">0 Events</span>
-      </div>
-
-      <!-- Live Stream Events Scroll Container -->
-      <div id="telemetry-feed" class="flex-1 p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-220px)] min-h-[460px]">
-        <!-- Empty State Placeholder (Replaced dynamically by JS) -->
-        <div id="feed-empty-state" class="h-full flex flex-col items-center justify-center p-8 text-center text-zinc-500">
-          <svg class="w-10 h-10 mb-3 text-zinc-600 animate-pulse-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-          <p class="text-xs font-mono font-medium text-zinc-400">Awaiting Edge Telemetry</p>
-          <p class="text-[11px] text-zinc-600 mt-1 max-w-[220px]">When the mobile app reconnects and flushes logs, payloads appear here in real-time.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ------------------------------------------------------------ -->
-    <!-- PANE 2: SAFETY GATE ENGINE (R1-R4) (Center - 4 Cols)         -->
-    <!-- ------------------------------------------------------------ -->
-    <section class="lg:col-span-4 flex flex-col rounded-xl bg-zinc-900/60 border border-zinc-800 shadow-xl overflow-hidden backdrop-blur-sm">
-      <!-- Pane Header -->
-      <div class="px-4 py-3.5 border-b border-zinc-800 bg-zinc-900/90 flex items-center justify-between">
+        <!-- Agent 3 -->
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-200">Safety Gate Engine (R1-R4)</h2>
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">Comms & Briefing</span>
+          <span class="text-slate-500">|</span>
+          <span class="text-amber-400 text-[11px]">Gemini 2.5 Flash</span>
         </div>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">DETERMINISTIC</span>
       </div>
-
-      <!-- Engine Status & Rules Body -->
-      <div class="flex-1 p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-220px)]">
-        
-        <!-- Live Safety Status Card (Dynamic Red or Green) -->
-        <div id="safety-status-card" class="rounded-lg p-4 border border-zinc-800 bg-zinc-950/60 transition-all duration-300">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono font-semibold uppercase text-zinc-400">Physical Verification Gate</span>
-            <span id="safety-pill" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">STANDBY</span>
-          </div>
-          <p id="safety-main-text" class="text-xs text-zinc-300 leading-relaxed">
-            Select or await an incoming batch sync to execute deterministic safety verification.
-          </p>
-        </div>
-
-        <!-- Conflict Details List -->
-        <div class="flex flex-col gap-2.5">
-          <div class="flex items-center justify-between text-xs font-mono text-zinc-400">
-            <span class="font-semibold uppercase text-zinc-300">Active Rule Violations</span>
-            <span id="conflict-count-badge" class="text-[10px] text-zinc-500">0 Conflicts</span>
-          </div>
-          <div id="conflict-list" class="space-y-2">
-            <div class="p-3 rounded-lg border border-zinc-800/80 bg-zinc-950/40 text-center text-xs text-zinc-500 font-mono">
-              No active safety conflicts
-            </div>
-          </div>
-        </div>
-
-        <!-- DCS Telemetry Comparator Table -->
-        <div class="mt-auto pt-3 border-t border-zinc-800/80">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono font-semibold uppercase text-zinc-400">SCADA/DCS Plant Telemetry</span>
-            <span class="text-[10px] font-mono text-amber-500">Live Telemetry Feed</span>
-          </div>
-          <div class="rounded-lg border border-zinc-800 bg-zinc-950/90 overflow-hidden text-[11px] font-mono">
-            <table class="w-full text-left">
-              <thead class="bg-zinc-900/80 text-zinc-400 border-b border-zinc-800 text-[10px]">
-                <tr>
-                  <th class="py-1.5 px-3">Asset Tag</th>
-                  <th class="py-1.5 px-2">DCS Sensor</th>
-                  <th class="py-1.5 px-2">Field Assertion</th>
-                  <th class="py-1.5 px-2 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody id="dcs-telemetry-body" class="divide-y divide-zinc-800/60 text-zinc-300">
-                <tr>
-                  <td class="py-1.5 px-3 font-bold text-amber-400">P-201B</td>
-                  <td class="py-1.5 px-2 text-red-400">OPEN (12.4 bar)</td>
-                  <td class="py-1.5 px-2 text-zinc-400">ISOLATED</td>
-                  <td class="py-1.5 px-2 text-right text-red-400 font-bold">MISMATCH</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 px-3 font-bold text-zinc-200">V-102</td>
-                  <td class="py-1.5 px-2 text-emerald-400">CLOSED (0.0 bar)</td>
-                  <td class="py-1.5 px-2 text-zinc-400">CLOSED</td>
-                  <td class="py-1.5 px-2 text-right text-emerald-400">MATCH</td>
-                </tr>
-                <tr>
-                  <td class="py-1.5 px-3 font-bold text-zinc-200">ESDV-301</td>
-                  <td class="py-1.5 px-2 text-amber-400">BYPASS (Active)</td>
-                  <td class="py-1.5 px-2 text-zinc-400">NORMAL</td>
-                  <td class="py-1.5 px-2 text-right text-amber-400 font-bold">FLAGGED</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ------------------------------------------------------------ -->
-    <!-- PANE 3: VERTEX AI AGENT HUB (Right - 4 Cols)                 -->
-    <!-- ------------------------------------------------------------ -->
-    <section class="lg:col-span-4 flex flex-col rounded-xl bg-zinc-900/60 border border-zinc-800 shadow-xl overflow-hidden backdrop-blur-sm">
-      <!-- Pane Header -->
-      <div class="px-4 py-3.5 border-b border-zinc-800 bg-zinc-900/90 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14.93V17a1 1 0 11-2 0v-.07A7.003 7.003 0 015.07 11H5a1 1 0 110-2h.07A7.003 7.003 0 0111 3.07V3a1 1 0 112 0v.07A7.003 7.003 0 0118.93 9H19a1 1 0 110 2h-.07A7.003 7.003 0 0113 16.93zM12 7a4 4 0 100 8 4 4 0 000-8z" />
-          </svg>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-200">Vertex AI Agent Hub</h2>
-        </div>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">MULTI-AGENT</span>
-      </div>
-
-      <!-- Agent Cards & Gemini Summary Container -->
-      <div class="flex-1 p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-220px)]">
-
-        <!-- 3 Sleek Multi-Agent Architecture Status Cards -->
-        <div class="space-y-2.5">
-          <span class="text-[10px] font-mono uppercase text-zinc-400 font-semibold">Active Autonomous Agents</span>
-          
-          <!-- Agent 1: Safety Gate Agent -->
-          <div class="p-3 rounded-lg border border-zinc-800 bg-zinc-950/70 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              <div>
-                <h4 class="text-xs font-semibold text-zinc-200">Safety Gate Agent</h4>
-                <p class="text-[10px] text-zinc-400 font-mono">Deterministic Rules Engine (R1–R4)</p>
-              </div>
-            </div>
-            <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">ONLINE</span>
-          </div>
-
-          <!-- Agent 2: Equipment Specs Agent -->
-          <div class="p-3 rounded-lg border border-zinc-800 bg-zinc-950/70 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-              </span>
-              <div>
-                <h4 class="text-xs font-semibold text-zinc-200">Equipment Specs Agent</h4>
-                <p class="text-[10px] text-zinc-400 font-mono">Vertex AI Discovery Engine & SCADA</p>
-              </div>
-            </div>
-            <span class="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">GROUNDED</span>
-          </div>
-
-          <!-- Agent 3: Comms & Briefing Agent (Gemini 2.5 Flash) -->
-          <div class="p-3 rounded-lg border border-zinc-800 bg-zinc-950/70 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-              </span>
-              <div>
-                <h4 class="text-xs font-semibold text-zinc-200">Comms & Briefing Agent</h4>
-                <p class="text-[10px] text-zinc-400 font-mono">Gemini 2.5 Flash • Multimodal Briefs</p>
-              </div>
-            </div>
-            <span class="text-[10px] font-mono text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">SYNTHESIZING</span>
-          </div>
-        </div>
-
-        <!-- Live Gemini Executive Briefing Card -->
-        <div class="mt-1 rounded-xl p-4 border border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-zinc-950 to-zinc-950 glow-amber flex flex-col">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold font-mono">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-              <span>SUPERVISOR EXECUTIVE BRIEF</span>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">GEMINI 2.5 FLASH</span>
-          </div>
-
-          <p id="agent-summary-text" class="text-xs text-zinc-200 leading-relaxed font-sans italic my-2">
-            "Awaiting edge batch synchronization to compose shift-handover intelligence brief..."
-          </p>
-
-          <div class="mt-2 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-            <span id="brief-citations">Evidence: Standby</span>
-            <span id="brief-timestamp" class="text-zinc-500">Live</span>
-          </div>
-        </div>
-
-        <!-- Speech Ingestion Quick Status Banner -->
-        <div class="p-3 rounded-lg border border-zinc-800 bg-zinc-950/60 flex items-center justify-between text-xs font-mono text-zinc-400">
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
-            </svg>
-            <span>Audio Pipeline:</span>
-          </div>
-          <span class="text-zinc-300 font-medium">Bilingual STT (Tamil/English) ~3.6s</span>
-        </div>
-
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: EXPANDED RAW CAPSULE JSON VIEWER                        -->
-  <!-- ============================================================== -->
-  <div id="json-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
-      <div class="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <h3 class="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider" id="modal-title">Raw Capsule Payload</h3>
-        <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-sm font-mono px-2 py-1">✕ CLOSE</button>
-      </div>
-      <div class="p-4 overflow-y-auto flex-1 font-mono text-xs">
-        <pre id="modal-json" class="text-emerald-400 bg-zinc-950 p-4 rounded-lg overflow-x-auto border border-zinc-800"></pre>
+      <div class="flex items-center gap-2 text-[11px]">
+        <span class="text-slate-500">Live Polling:</span>
+        <span class="text-emerald-400 font-semibold" id="poll-indicator">2s Active</span>
       </div>
     </div>
   </div>
 
   <!-- ============================================================== -->
-  <!-- VANILLA JAVASCRIPT: POLLING & DYNAMIC RENDERING ENGINE         -->
+  <!-- MAIN LAYOUT: BREATHABLE 2-COLUMN VIEW                          -->
+  <!-- ============================================================== -->
+  <main class="max-w-7xl w-full mx-auto p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+    <!-- ------------------------------------------------------------ -->
+    <!-- LEFT: EDGE TELEMETRY STREAM (Clean Feed)                      -->
+    <!-- ------------------------------------------------------------ -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Edge Telemetry Stream</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Offline voice notes flushed from Gemma E4B devices</p>
+        </div>
+        <span id="stream-count-badge" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
+          0 Events
+        </span>
+      </div>
+
+      <!-- Feed Container (No harsh borders, generous spacing) -->
+      <div id="telemetry-feed" class="space-y-3.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+        <!-- Empty State Placeholder -->
+        <div id="feed-empty-state" class="p-12 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
+          <p class="font-medium text-slate-400">Awaiting Edge Data</p>
+          <p class="mt-1 text-slate-500 text-[11px]">Mobile sync payloads will appear here in real time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ -->
+    <!-- RIGHT: SAFETY GATE HERO & EXECUTIVE BRIEF (The Focal Point)   -->
+    <!-- ------------------------------------------------------------ -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- FOCAL POINT: SAFETY GATE ALERT (Massive & Instantly Readable) -->
+      <div id="safety-hero-card" class="rounded-2xl p-8 transition-all duration-300 bg-red-950/30 border border-red-500/20">
+        <div class="flex items-start gap-5">
+          <!-- Massive Warning Icon -->
+          <div id="hero-icon-container" class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+            <svg id="hero-icon-alert" class="w-9 h-9 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <svg id="hero-icon-check" class="w-9 h-9 text-emerald-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span id="hero-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300">
+                SAFETY GATE GATED
+              </span>
+              <span id="hero-rule-id" class="text-xs font-mono text-slate-400">Rule R1</span>
+            </div>
+
+            <!-- Massive Headline -->
+            <h3 id="hero-title" class="text-2xl font-extrabold tracking-tight text-red-400 leading-snug">
+              CRITICAL: Physical Telemetry Mismatch on P-201B
+            </h3>
+
+            <!-- Clean, Jargon-Free Description -->
+            <p id="hero-description" class="text-sm text-slate-300 mt-2.5 leading-relaxed">
+              Operator logged pump as ISOLATED, but live plant SCADA sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.
+            </p>
+
+            <!-- Key Fact Pills -->
+            <div id="hero-facts" class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs font-mono">
+              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Asset: <b class="text-amber-400">P-201B</b></span>
+              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">DCS Sensor: <b class="text-red-400">OPEN (12.4 bar)</b></span>
+              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Field Assertion: <b class="text-slate-400">ISOLATED</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GEMINI 2.5 FLASH EXECUTIVE BRIEF -->
+      <div class="rounded-2xl p-8 bg-slate-900/50 border border-slate-800/60 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+            </svg>
+            <span>Supervisor Executive Brief</span>
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            GEMINI 2.5 FLASH
+          </span>
+        </div>
+
+        <blockquote id="agent-summary-text" class="text-base text-slate-200 leading-relaxed font-sans italic border-l-2 border-amber-500/60 pl-4 my-1">
+          "Awaiting edge telemetry flush to compose shift-handover intelligence brief..."
+        </blockquote>
+
+        <div class="flex items-center justify-between text-xs font-mono text-slate-500 pt-2 border-t border-slate-800/40">
+          <span id="brief-citations">Evidence: Standby</span>
+          <span id="brief-timestamp">Live</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: VIEW RAW PAYLOAD (Zero Noise on Main Screen)            -->
+  <!-- ============================================================== -->
+  <div id="json-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider" id="modal-title">Raw Capsule Payload</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 transition">
+          ✕ CLOSE
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 font-mono text-xs">
+        <pre id="modal-json" class="text-emerald-400 bg-slate-950 p-5 rounded-xl overflow-x-auto border border-slate-800/60 leading-relaxed"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT: REALTIME POLLING & CLEAN RENDERING ENGINE          -->
   <!-- ============================================================== -->
   <script>
     let activeEvents = [];
     let selectedEventId = null;
 
-    // 1. Core Polling Loop (Runs every 2000ms)
     async function pollDashboardStream() {
       try {
         const response = await fetch('/api/v1/dashboard/stream');
         if (!response.ok) return;
         const data = await response.json();
-        
-        if (data.model) {
-          document.getElementById('badge-model').textContent = data.model;
-        }
 
         if (data.events && data.events.length > 0) {
-          // Check if events have changed
           const hasNew = activeEvents.length === 0 || data.events[0].id !== activeEvents[0].id;
           activeEvents = data.events;
-          
+
           if (hasNew || !selectedEventId) {
             selectedEventId = activeEvents[0].id;
-            renderAllPanes();
+            renderUI();
           }
         }
       } catch (err) {
-        console.warn('Dashboard stream poll error:', err);
+        console.warn('Dashboard polling error:', err);
       }
     }
 
-    // 2. Render Left Pane: Edge Telemetry Stream
-    function renderTelemetryStream() {
+    function renderUI() {
+      renderFeed();
+      renderHero();
+      renderBrief();
+    }
+
+    // 1. Render Left Feed
+    function renderFeed() {
       const container = document.getElementById('telemetry-feed');
       const countBadge = document.getElementById('stream-count-badge');
-      
+
       if (!activeEvents || activeEvents.length === 0) {
         document.getElementById('feed-empty-state').classList.remove('hidden');
         countBadge.textContent = '0 Events';
@@ -422,46 +296,34 @@
       document.getElementById('feed-empty-state').classList.add('hidden');
       countBadge.textContent = `${activeEvents.length} Events`;
 
-      container.innerHTML = activeEvents.map((evt, idx) => {
+      container.innerHTML = activeEvents.map(evt => {
         const isSelected = evt.id === selectedEventId;
         const isConflict = evt.has_critical_conflict || evt.sync_status === 'CONFLICT_DETECTED';
-        const statusBadge = isConflict 
-          ? `<span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-red-950/80 text-red-400 border border-red-500/40">CONFLICT DETECTED</span>`
-          : `<span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">SUCCESS</span>`;
-
-        const primaryTag = evt.capsules && evt.capsules[0] ? evt.capsules[0].asset_tag : 'N/A';
-        const capsuleCount = evt.capsules ? evt.capsules.length : 0;
+        const transcript = (evt.capsules && evt.capsules[0]) ? evt.capsules[0].text_transcript : 'Shift assertion logged.';
         const timeFormatted = new Date(evt.processed_at || evt.timestamp).toLocaleTimeString();
 
         return `
-          <div onclick="selectEvent('${evt.id}')" class="p-3.5 rounded-lg border transition duration-150 cursor-pointer animate-slide-in ${
+          <div onclick="selectEvent('${evt.id}')" class="p-5 rounded-2xl transition duration-150 cursor-pointer ${
             isSelected 
-              ? 'border-amber-500/70 bg-zinc-900 glow-amber' 
-              : 'border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/50'
+              ? 'bg-slate-900 border-l-4 border-amber-500 shadow-lg' 
+              : 'bg-slate-900/40 hover:bg-slate-900/80 border-l-4 border-transparent'
           }">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-mono font-bold text-zinc-100 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full ${isConflict ? 'bg-red-500' : 'bg-emerald-500'}"></span>
-                ${evt.device_id || 'edge-mobile-01'}
+            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2">
+              <span class="font-semibold text-slate-200">${evt.device_id || 'pixel7-edge'}</span>
+              <span>${timeFormatted}</span>
+            </div>
+
+            <p class="text-sm text-slate-300 font-sans line-clamp-1 mb-3">
+              "${transcript}"
+            </p>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
+              <span class="text-xs font-mono ${isConflict ? 'text-red-400 font-semibold' : 'text-emerald-400'}">
+                ${isConflict ? '● Conflict Flagged' : '● Nominal'}
               </span>
-              <span class="text-[10px] font-mono text-zinc-400">${timeFormatted}</span>
-            </div>
 
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-[11px] font-mono text-zinc-400">
-                <span class="text-amber-400 font-semibold">${evt.operator_id}</span> • <span>${evt.shift_name}</span>
-              </div>
-              ${statusBadge}
-            </div>
-
-            <!-- Capsule preview snippet -->
-            <div class="bg-zinc-950 p-2 rounded border border-zinc-800/80 text-[11px] font-mono text-zinc-300 flex items-center justify-between">
-              <div class="truncate max-w-[200px]">
-                <span class="font-bold text-amber-400">${primaryTag}</span>: 
-                <span class="text-zinc-400">${evt.capsules && evt.capsules[0] ? evt.capsules[0].text_transcript : 'Log assertion'}</span>
-              </div>
-              <button onclick="event.stopPropagation(); viewRawJson('${evt.id}')" class="text-[10px] text-amber-400 hover:underline px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
-                JSON
+              <button onclick="event.stopPropagation(); viewRawJson('${evt.id}')" class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition">
+                View Payload
               </button>
             </div>
           </div>
@@ -469,62 +331,70 @@
       }).join('');
     }
 
-    // 3. Render Center Pane: Safety Gate Engine
-    function renderSafetyEngine() {
+    // 2. Render Hero Safety Gate
+    function renderHero() {
       const evt = activeEvents.find(e => e.id === selectedEventId) || activeEvents[0];
       if (!evt) return;
 
       const isConflict = evt.has_critical_conflict || evt.sync_status === 'CONFLICT_DETECTED';
-      const statusCard = document.getElementById('safety-status-card');
-      const statusPill = document.getElementById('safety-pill');
-      const statusMainText = document.getElementById('safety-main-text');
-      const conflictList = document.getElementById('conflict-list');
-      const conflictCount = document.getElementById('conflict-count-badge');
+      const heroCard = document.getElementById('safety-hero-card');
+      const iconAlert = document.getElementById('hero-icon-alert');
+      const iconCheck = document.getElementById('hero-icon-check');
+      const iconBox = document.getElementById('hero-icon-container');
+      const badge = document.getElementById('hero-badge');
+      const ruleId = document.getElementById('hero-rule-id');
+      const title = document.getElementById('hero-title');
+      const desc = document.getElementById('hero-description');
+      const facts = document.getElementById('hero-facts');
 
       if (isConflict) {
-        statusCard.className = 'rounded-lg p-4 border border-red-500/50 bg-red-950/20 glow-red transition-all duration-300';
-        statusPill.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse';
-        statusPill.textContent = 'SAFETY GATED (409)';
-        statusMainText.innerHTML = `<span class="text-red-400 font-bold">CRITICAL SAFETY HAZARDS DETECTED.</span> Telemetry physically contradicts operator assertions. Handover responsibility cannot be transferred without supervisor resolution.`;
-      } else {
-        statusCard.className = 'rounded-lg p-4 border border-emerald-500/40 bg-emerald-950/20 glow-emerald transition-all duration-300';
-        statusPill.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
-        statusPill.textContent = 'NOMINAL (200)';
-        statusMainText.innerHTML = `<span class="text-emerald-400 font-bold">ALL VERIFICATIONS PASSED.</span> All asserted field equipment states match SCADA telemetry. Unit is clear for shift handover.`;
-      }
+        heroCard.className = 'rounded-2xl p-8 transition-all duration-300 bg-red-950/30 border border-red-500/25';
+        iconBox.className = 'w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0';
+        iconAlert.classList.remove('hidden');
+        iconCheck.classList.add('hidden');
 
-      // Render conflicts
-      const conflicts = evt.conflicts || [];
-      conflictCount.textContent = `${conflicts.length} Violations`;
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300';
+        badge.textContent = 'SAFETY GATE LOCKED';
 
-      if (conflicts.length === 0) {
-        conflictList.innerHTML = `
-          <div class="p-3 rounded-lg border border-emerald-500/30 bg-emerald-950/10 text-emerald-400 text-xs font-mono flex items-center gap-2">
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Zero safety conflicts detected.
-          </div>
+        const topConflict = (evt.conflicts && evt.conflicts[0]) || {};
+        ruleId.textContent = topConflict.rule_id ? `Rule ${topConflict.rule_id}` : 'Rule R1';
+
+        title.className = 'text-2xl font-extrabold tracking-tight text-red-400 leading-snug';
+        title.textContent = topConflict.title ? `CRITICAL: ${topConflict.title}` : 'CRITICAL: Physical Telemetry Mismatch on P-201B';
+
+        desc.textContent = topConflict.description 
+          ? topConflict.description 
+          : 'Operator asserted pump is ISOLATED, but plant sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.';
+
+        facts.innerHTML = `
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Asset: <b class="text-amber-400">P-201B</b></span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">DCS Sensor: <b class="text-red-400">OPEN (12.4 bar)</b></span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Field Assertion: <b class="text-slate-400">ISOLATED</b></span>
         `;
       } else {
-        conflictList.innerHTML = conflicts.map(c => `
-          <div class="p-3 rounded-lg border border-red-500/40 bg-red-950/20 text-xs flex flex-col gap-1.5 animate-slide-in">
-            <div class="flex items-center justify-between">
-              <span class="font-mono font-bold text-red-400 text-xs flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                [${c.rule_id}] ${c.title}
-              </span>
-              <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-red-900/60 text-red-300">${c.severity}</span>
-            </div>
-            <p class="text-[11px] text-zinc-300 leading-snug">${c.description}</p>
-            <div class="text-[10px] font-mono text-zinc-400 mt-0.5">
-              Evidence: <span class="text-amber-400">${(c.evidence_ids || []).join(', ')}</span>
-            </div>
-          </div>
-        `).join('');
+        heroCard.className = 'rounded-2xl p-8 transition-all duration-300 bg-emerald-950/30 border border-emerald-500/25';
+        iconBox.className = 'w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0';
+        iconAlert.classList.add('hidden');
+        iconCheck.classList.remove('hidden');
+
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300';
+        badge.textContent = 'ALL SYSTEMS NOMINAL';
+        ruleId.textContent = 'All Rules Verified';
+
+        title.className = 'text-2xl font-extrabold tracking-tight text-emerald-400 leading-snug';
+        title.textContent = 'NOMINAL: Telemetry Reconciled Across All Assets';
+
+        desc.textContent = 'All physical states reported by field technicians match live control room sensors. Unit is fully approved for shift handover.';
+
+        facts.innerHTML = `
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Equipment Status: <b class="text-emerald-400">100% Verified</b></span>
+          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Permit Status: <b class="text-emerald-400">Clean</b></span>
+        `;
       }
     }
 
-    // 4. Render Right Pane: Vertex AI Agent Hub
-    function renderAgentHub() {
+    // 3. Render Brief Card
+    function renderBrief() {
       const evt = activeEvents.find(e => e.id === selectedEventId) || activeEvents[0];
       if (!evt) return;
 
@@ -532,36 +402,26 @@
       const citations = document.getElementById('brief-citations');
       const timestamp = document.getElementById('brief-timestamp');
 
-      if (evt.summary) {
-        summaryText.textContent = `"${evt.summary}"`;
-      } else {
-        summaryText.textContent = `"Telemetry processed cleanly across all units."`;
-      }
+      summaryText.textContent = evt.summary 
+        ? `"${evt.summary}"`
+        : `"All units reconciled. Plant parameters nominal for incoming shift."`;
 
-      const evidenceCount = evt.conflicts && evt.conflicts.length > 0 
-        ? evt.conflicts.flatMap(c => c.evidence_ids || []).slice(0, 3).join(', ')
+      citations.textContent = (evt.conflicts && evt.conflicts.length > 0)
+        ? `Citations: ${evt.conflicts.flatMap(c => c.evidence_ids || []).slice(0, 2).join(', ')}`
         : 'Telemetry Reconciled';
 
-      citations.textContent = `Evidence: ${evidenceCount}`;
       timestamp.textContent = new Date(evt.processed_at || evt.timestamp).toLocaleTimeString();
-    }
-
-    // Master Render Trigger
-    function renderAllPanes() {
-      renderTelemetryStream();
-      renderSafetyEngine();
-      renderAgentHub();
     }
 
     function selectEvent(id) {
       selectedEventId = id;
-      renderAllPanes();
+      renderUI();
     }
 
     function viewRawJson(id) {
       const evt = activeEvents.find(e => e.id === id);
       if (!evt) return;
-      document.getElementById('modal-title').textContent = `Raw Payload // ${evt.id}`;
+      document.getElementById('modal-title').textContent = `Payload // ${evt.id}`;
       document.getElementById('modal-json').textContent = JSON.stringify(evt, null, 2);
       document.getElementById('json-modal').classList.remove('hidden');
     }
@@ -570,7 +430,7 @@
       document.getElementById('json-modal').classList.add('hidden');
     }
 
-    // 5. Interactive Demo Simulation Triggers (For live demo video)
+    // Demo Simulation Buttons
     async function triggerSimulatedSync(type) {
       const isConflict = type === 'conflict';
       const payload = isConflict ? {
@@ -580,7 +440,7 @@
         unit_name: "HYDROCRACKER-01",
         capsules: [
           {
-            uuid: "demo-capsule-" + Math.floor(Math.random() * 1000),
+            uuid: "capsule-" + Math.floor(Math.random() * 1000),
             timestamp: new Date().toISOString(),
             category: "ISOLATION",
             asset_tag: "P-201B",
@@ -596,7 +456,7 @@
         unit_name: "HYDROCRACKER-01",
         capsules: [
           {
-            uuid: "demo-capsule-" + Math.floor(Math.random() * 1000),
+            uuid: "capsule-" + Math.floor(Math.random() * 1000),
             timestamp: new Date().toISOString(),
             category: "EQUIPMENT",
             asset_tag: "V-102",
@@ -613,14 +473,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        // Immediately poll to refresh dashboard
         await pollDashboardStream();
       } catch (e) {
         console.error('Simulation error:', e);
       }
     }
 
-    // Start live polling on mount
+    // Initial poll and recurring loop
     pollDashboardStream();
     setInterval(pollDashboardStream, 2000);
   </script>
