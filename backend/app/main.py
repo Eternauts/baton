@@ -510,6 +510,23 @@ async def get_dashboard_stream():
     }
 
 
+@app.post("/api/v1/dashboard/clear_alert")
+async def clear_dashboard_alert():
+    """
+    Clears the active R1 conflict alert from the telemetry stream,
+    transitioning the safety engine node to nominal state.
+    """
+    if dashboard_telemetry_stream:
+        latest = dashboard_telemetry_stream[0]
+        latest["has_critical_conflict"] = False
+        latest["sync_status"] = "ACKNOWLEDGED"
+        latest["summary"] = "Supervisor Arun acknowledged and mitigated active isolation alert. Safety interlock clear."
+        if "conflicts" in latest:
+            for c in latest["conflicts"]:
+                c["status"] = "MITIGATED"
+        save_batch_sync_event(latest)
+    return {"status": "ACKNOWLEDGED", "message": "Alert acknowledged and cleared by supervisor."}
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard():
