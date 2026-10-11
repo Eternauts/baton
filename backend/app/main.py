@@ -105,18 +105,14 @@ def fetch_and_parse_cloud_logs(max_entries: int = 50) -> List[Dict[str, Any]]:
         return list(cloud_activity_log)
 
     try:
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "ai-builder-cup-2026-509818")
         filter_expr = (
             'resource.type="cloud_run_revision" AND '
             'resource.labels.service_name="baton-api" AND '
-            'NOT httpRequest.requestUrl=~"/api/v1/dashboard/stream" AND '
-            'NOT httpRequest.requestUrl=~"/dashboard" AND '
-            'NOT httpRequest.requestUrl=~"/favicon.ico" AND '
-            'NOT httpRequest.requestUrl=~"/api/health" AND '
-            'NOT httpRequest.requestUrl=~"/api/v1/health" AND '
-            'NOT textPayload=~"/api/v1/dashboard/stream" AND '
-            'NOT textPayload=~"/dashboard" AND '
-            'NOT textPayload=~"/favicon.ico" AND '
-            'NOT textPayload=~"GET /api/health"'
+            f'logName="projects/{project_id}/logs/run.googleapis.com%2Frequests" AND '
+            'NOT httpRequest.requestUrl:"dashboard" AND '
+            'NOT httpRequest.requestUrl:"health" AND '
+            'NOT httpRequest.requestUrl:"favicon.ico"'
         )
         entries = list(cloud_log_client.list_entries(
             filter_=filter_expr,
@@ -128,40 +124,48 @@ def fetch_and_parse_cloud_logs(max_entries: int = 50) -> List[Dict[str, Any]]:
         parsed: List[Dict[str, Any]] = []
         for e in entries:
             req = e.http_request or {}
-            status = req.get("status")
+            status = req.get("status", 200)
             url = req.get("requestUrl", "")
-            method = req.get("requestMethod", "")
+            method = req.get("requestMethod", "POST")
+            user_agent = req.get("userAgent", "Client")
+            latency = req.get("latency", "0.2s")
+            remote_ip = req.get("remoteIp", "unknown")
             text = str(e.payload) if e.payload else ""
 
-            is_anomaly = (status and status >= 400) or e.severity in ["WARNING", "ERROR", "CRITICAL"] or "500" in text
-            is_transcribe = "/api/transcribe" in url or "Transcribe request_id=" in text or "transcribe" in text.lower()
+            path = url.split("run.app")[-1] if "run.app" in url else url
+            if not path and method:
+                path = "/api/transcribe" if "transcribe" in text.lower() else "/"
+
+            is_anomaly = (status and status >= 400) or e.severity in ["WARNING", "ERROR", "CRITICAL"]
+            is_transcribe = "/api/transcribe" in url or "transcribe" in text.lower()
             is_sync = "/batch_sync" in url or "batch" in text.lower()
 
             if is_anomaly:
                 cat = "ANOMALY"
+                summary = f"Incident: HTTP {status} on {path} ({user_agent})"
             elif is_transcribe:
                 cat = "TRANSCRIBE"
+                summary = f"Audio Transcription ({latency}) from {user_agent}"
             elif is_sync:
                 cat = "BATCH_SYNC"
+                summary = f"Handover Batch Sync ({latency}) from {user_agent}"
             else:
                 cat = "SYSTEM"
-
-            snippet = text.strip()
-            if not snippet and url:
-                snippet = f"{method} {url} (HTTP {status or 200})"
+                summary = f"{method} {path} - HTTP {status}"
 
             parsed.append({
                 "id": str(getattr(e, "insert_id", uuid.uuid4().hex[:8])),
                 "timestamp": e.timestamp.isoformat() if hasattr(e.timestamp, "isoformat") else str(e.timestamp),
                 "category": cat,
-                "status": status or (500 if "500" in text else 200),
-                "severity": str(e.severity) if e.severity else "INFO",
-                "method": method or ("POST" if is_transcribe or is_sync else "GET"),
+                "status": status,
+                "severity": "ERROR" if is_anomaly else "INFO",
+                "method": method,
+                "path": path,
                 "url": url,
-                "ip": req.get("remoteIp"),
-                "user_agent": req.get("userAgent"),
-                "latency": req.get("latency", ""),
-                "summary": snippet[:180]
+                "ip": remote_ip,
+                "user_agent": user_agent,
+                "latency": latency,
+                "summary": summary
             })
 
         _cached_cloud_logs = parsed
