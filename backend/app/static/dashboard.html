@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baton // Cloud Control Room</title>
+  <title>Baton // Google Cloud Living Architecture & Observability Hub</title>
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,31 +22,47 @@
       theme: {
         extend: {
           colors: {
+            gblue: {
+              400: '#38bdf8',
+              500: '#0284c7',
+              600: '#0369a1',
+            },
             amber: {
               400: '#fbbf24',
-              500: '#F5A524',
+              500: '#f59e0b',
               600: '#d97706',
             },
+            danger: {
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+            },
+            nominal: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            }
           },
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
-          },
-          animation: {
-            'flow': 'flowPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          },
-          keyframes: {
-            flowPulse: {
-              '0%, 100%': { opacity: '0.4', transform: 'scale(0.98)' },
-              '50%': { opacity: '1', transform: 'scale(1.02)' },
-            }
           }
         }
       }
     }
   </script>
+
   <style>
-    /* Minimalist Dark Scrollbar */
+    /* Blueprint dot-grid background */
+    body {
+      background-color: #0b0f19;
+      background-image: radial-gradient(#1e293b 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Minimalist Dark Scrollbars */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -56,600 +77,953 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #475569;
     }
-    .flow-connector {
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.2) 0%, rgba(245, 165, 36, 0.4) 50%, rgba(16, 185, 129, 0.2) 100%);
-      background-size: 200% 100%;
-      animation: gradientMove 2.5s linear infinite;
+
+    /* SVG Animated Wire Connectors */
+    .flow-wire {
+      stroke-dasharray: 6 8;
+      animation: dashMove 1.5s linear infinite;
     }
-    @keyframes gradientMove {
-      0% { background-position: 100% 0; }
-      100% { background-position: -100% 0; }
+    .flow-wire-fast {
+      stroke-dasharray: 8 6;
+      animation: dashMove 0.8s linear infinite;
+    }
+    @keyframes dashMove {
+      from { stroke-dashoffset: 28; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Pulse radar dots */
+    @keyframes radarPulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 0.2; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .radar-pulse {
+      animation: radarPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Node highlight glow keyframes */
+    @keyframes glowRed {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.85); border-color: rgba(239, 68, 68, 1); }
+    }
+    @keyframes glowGreen {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); }
+      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.85); border-color: rgba(16, 185, 129, 1); }
+    }
+    @keyframes glowBlue {
+      0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); }
+      50% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.85); border-color: rgba(56, 189, 248, 1); }
+    }
+    @keyframes glowAmber {
+      0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.5); }
+      50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.85); border-color: rgba(245, 158, 11, 1); }
+    }
+
+    .node-pulse-red { animation: glowRed 1.2s ease-in-out infinite; }
+    .node-pulse-green { animation: glowGreen 1.2s ease-in-out infinite; }
+    .node-pulse-blue { animation: glowBlue 1.2s ease-in-out infinite; }
+    .node-pulse-amber { animation: glowAmber 1.2s ease-in-out infinite; }
+
+    /* Packet particle traveling along SVG */
+    .traveling-packet {
+      filter: drop-shadow(0 0 6px currentColor);
+      transition: all 0.05s linear;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500/20 selection:text-amber-400">
+<body class="min-h-screen text-slate-100 flex flex-col justify-between selection:bg-sky-500/30 selection:text-sky-300">
 
-  <!-- ============================================================== -->
-  <!-- TOP NAVIGATION                                                 -->
-  <!-- ============================================================== -->
-  <header class="border-b border-slate-800/60 bg-slate-900/60 backdrop-blur-xl px-8 py-4 sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6">
+  <!-- TOP HEADER & DEMO SIMULATION BAR -->
+  <header class="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-6 py-3.5">
+    <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">
       
-      <!-- Brand & Tagline -->
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
+      <!-- Brand & Project Title -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 via-sky-500 to-amber-400 p-[1px] shadow-lg shadow-sky-500/20">
+          <div class="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-sky-400"></i>
+          </div>
         </div>
         <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-lg font-bold tracking-tight text-white">Baton</h1>
-            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">CONTROL ROOM</span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE OBSERVABILITY</span>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              Baton <span class="text-slate-500 font-normal">/</span> Cloud Control Room
+            </h1>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/20 tracking-wider">
+              ETERNAUTS
+            </span>
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Shift-Handover Guardian • Cloud Run Log Parser & Telemetry Flow</p>
+          <p class="text-xs text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+            <span>Google Cloud Run</span>
+            <span class="text-slate-600">•</span>
+            <span>asia-southeast1</span>
+            <span class="text-slate-600">•</span>
+            <span class="text-emerald-400">Active Orchestration</span>
+          </p>
         </div>
       </div>
 
-      <!-- Live Cloud Health & Demo Simulation Buttons -->
-      <div class="flex items-center gap-3 text-xs">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 font-mono text-[11px] border border-slate-800">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Cloud Run • asia-southeast1</span>
+      <!-- Real-time Status Badges -->
+      <div class="hidden xl:flex items-center space-x-3">
+        <!-- Cloud Run Status -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/90 text-xs">
+          <div class="relative flex items-center justify-center">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="absolute w-4 h-4 rounded-full bg-emerald-400/30 radar-pulse"></span>
+          </div>
+          <span class="text-slate-400">Cloud Run:</span>
+          <span class="font-mono text-emerald-300 font-medium" id="badge-cloud-run">99.98% OK</span>
         </div>
 
-        <button onclick="triggerSimulatedSync('conflict')" class="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-medium transition flex items-center gap-1.5 shadow-sm">
-          <span class="w-2 h-2 rounded-full bg-red-400"></span>
-          Simulate Conflict (R1)
+        <!-- Vertex AI Status -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/90 text-xs">
+          <div class="relative flex items-center justify-center">
+            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+            <span class="absolute w-4 h-4 rounded-full bg-sky-400/30 radar-pulse"></span>
+          </div>
+          <span class="text-slate-400">Vertex AI:</span>
+          <span class="font-mono text-sky-300 font-medium" id="badge-vertex-model">gemini-2.5-flash</span>
+        </div>
+
+        <!-- SCADA Telemetry Status -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/90 text-xs">
+          <div class="relative flex items-center justify-center">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span class="absolute w-4 h-4 rounded-full bg-amber-400/30 radar-pulse"></span>
+          </div>
+          <span class="text-slate-400">SCADA DCS:</span>
+          <span class="font-mono text-amber-300 font-medium">Live Feed</span>
+        </div>
+      </div>
+
+      <!-- Interactive Demo Simulation Controls -->
+      <div class="flex items-center space-x-2.5">
+        <button id="btn-sim-nominal" onclick="triggerSimulation('NOMINAL')"
+          class="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-600/50 hover:border-emerald-500 shadow-lg shadow-emerald-950/50 transition-all active:scale-95">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Trigger Mobile Sync (Nominal)</span>
         </button>
 
-        <button onclick="triggerSimulatedSync('clean')" class="px-3 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 font-medium transition flex items-center gap-1.5 shadow-sm">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          Simulate Nominal
+        <button id="btn-sim-conflict" onclick="triggerSimulation('CONFLICT')"
+          class="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-600/50 hover:border-red-500 shadow-lg shadow-red-950/50 transition-all active:scale-95">
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-400"></i>
+          <span>Simulate R1 Isolation Conflict</span>
+        </button>
+
+        <button onclick="pollTelemetry(true)" title="Force Refresh Telemetry"
+          class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors">
+          <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-refresh"></i>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- ============================================================== -->
-  <!-- ANIMATED CLOUD RESOURCE FLOW TOPOLOGY                          -->
-  <!-- ============================================================== -->
-  <section class="border-b border-slate-800/50 bg-slate-900/40 px-8 py-5">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex items-center justify-between mb-3 text-xs font-mono text-slate-400">
-        <span class="font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          Cloud Resource Orchestration Flow
-        </span>
-        <span class="text-[11px] text-slate-500 font-mono">Noise Filter: Active (Excludes 2s health polling)</span>
-      </div>
+  <!-- MAIN VIEWPORT -->
+  <main class="max-w-[1720px] mx-auto w-full px-6 py-6 flex-1 flex flex-col gap-6">
 
-      <!-- 4-Node Animated Pipeline Flow -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-        
-        <!-- Node 1: Mobile Edge -->
-        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
-          <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-white truncate">Mobile Edge</span>
-              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            </div>
-            <p class="text-[11px] font-mono text-cyan-400" id="flow-edge-stat">Dart/3.13 (Flutter)</p>
-            <p class="text-[10px] text-slate-400">Gemma E4B Offline Notes</p>
-          </div>
-        </div>
-
-        <!-- Node 2: Cloud Run Gateway -->
-        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
-          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-white truncate">Cloud Run API</span>
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            </div>
-            <p class="text-[11px] font-mono text-emerald-400" id="flow-run-stat">baton-api • Active</p>
-            <p class="text-[10px] text-slate-400" id="flow-run-sub">asia-southeast1</p>
-          </div>
-        </div>
-
-        <!-- Node 3: Vertex AI & Gemini -->
-        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
-          <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-white truncate">Gemini 2.5 Flash</span>
-              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            </div>
-            <p class="text-[11px] font-mono text-amber-400" id="flow-gemini-stat">Multimodal AI Active</p>
-            <p class="text-[10px] text-slate-400">Vertex AI • us-central1</p>
-          </div>
-        </div>
-
-        <!-- Node 4: Safety Rules Engine -->
-        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center gap-3.5 relative overflow-hidden">
-          <div class="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center shrink-0 text-red-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-white truncate">Safety Engine</span>
-              <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
-            </div>
-            <p class="text-[11px] font-mono text-red-400" id="flow-rules-stat">R1–R4 Enforced</p>
-            <p class="text-[10px] text-slate-400">Deterministic DCS Telemetry</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================== -->
-  <!-- MAIN LAYOUT                                                    -->
-  <!-- ============================================================== -->
-  <main class="max-w-7xl w-full mx-auto p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-    <!-- ------------------------------------------------------------ -->
-    <!-- LEFT: SUBSTANTIVE CLOUD RUN LOGS & ACTIVITY STREAM (5 Cols)   -->
-    <!-- ------------------------------------------------------------ -->
-    <section class="lg:col-span-5 flex flex-col gap-4">
+    <!-- HERO SECTION: THE LIVING ARCHITECTURE CANVAS -->
+    <section class="relative rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-md p-6 shadow-2xl overflow-hidden">
       
-      <!-- Feed Header with Filter Pills -->
-      <div class="flex flex-col gap-2.5">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Cloud Run Activity Stream</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Parsed from Google Cloud Logging • Real-time</p>
+      <!-- Canvas Header Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-800/60">
+        <div class="flex items-center space-x-3">
+          <div class="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
+            <i data-lucide="network" class="w-4 h-4"></i>
           </div>
-          <span id="log-count-badge" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
-            0 Substantive
-          </span>
+          <div>
+            <h2 class="text-sm font-bold tracking-tight text-white uppercase tracking-wider flex items-center gap-2">
+              Google Cloud Living Architecture & Real-Time Topology
+            </h2>
+            <p class="text-xs text-slate-400">Live animated telemetry data packets traversing edge mobile, Cloud Run microservices, safety engines, and Vertex AI agents</p>
+          </div>
         </div>
 
-        <!-- Filter Pills -->
-        <div class="flex items-center gap-1.5 text-xs font-mono flex-wrap">
-          <button onclick="setLogFilter('all')" id="tab-all" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition">
-            All (<span id="count-all">0</span>)
-          </button>
-          <button onclick="setLogFilter('anomalies')" id="tab-anomalies" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-red-400 border border-slate-800 transition">
-            ⚠️ Incidents (<span id="count-anomalies">0</span>)
-          </button>
-          <button onclick="setLogFilter('transcribe')" id="tab-transcribe" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition">
-            🎙️ Audio (<span id="count-transcribe">0</span>)
-          </button>
-          <button onclick="setLogFilter('sync')" id="tab-sync" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition">
-            🛡️ Syncs (<span id="count-sync">0</span>)
-          </button>
+        <!-- Telemetry Metrics Pills -->
+        <div class="flex items-center space-x-3 text-xs font-mono">
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950/80 border border-slate-800 text-slate-300">
+            <span class="text-slate-500">VOICE ASR:</span>
+            <span class="text-sky-400 font-semibold" id="pill-total-transcriptions">22</span>
+          </div>
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950/80 border border-slate-800 text-slate-300">
+            <span class="text-slate-500">BATCH SYNCS:</span>
+            <span class="text-emerald-400 font-semibold" id="pill-total-syncs">2</span>
+          </div>
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950/80 border border-slate-800 text-slate-300">
+            <span class="text-slate-500">ANOMALIES:</span>
+            <span class="text-red-400 font-semibold" id="pill-total-anomalies">4</span>
+          </div>
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950/80 border border-slate-800 text-slate-300">
+            <span class="text-slate-500">GATE STATE:</span>
+            <span class="text-amber-400 font-semibold" id="pill-gate-state">LOCKED (R1)</span>
+          </div>
         </div>
       </div>
 
-      <!-- Feed Container -->
-      <div id="cloud-log-feed" class="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
-        <!-- Placeholder -->
-        <div id="feed-empty-state" class="p-10 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
-          <p class="font-medium text-slate-400">Parsing Cloud Run Logs...</p>
-          <p class="mt-1 text-slate-500 text-[11px]">Connecting to Cloud Logging API in asia-southeast1...</p>
+      <!-- THE TOPOLOGY DIAGRAM CONTAINER -->
+      <div class="relative w-full h-[400px] select-none" id="topology-canvas-container">
+        
+        <!-- SVG CONNECTOR LINES & PACKETS LAYER -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" id="topology-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+          <defs>
+            <!-- Linear Gradients for Flow Wires -->
+            <linearGradient id="grad-edge-to-gateway" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.9"/>
+            </linearGradient>
+            <linearGradient id="grad-gateway-to-safety" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#ef4444" stop-opacity="0.9"/>
+            </linearGradient>
+            <linearGradient id="grad-gateway-to-vertex" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.9"/>
+            </linearGradient>
+            <linearGradient id="grad-gateway-to-firestore" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#a855f7" stop-opacity="0.9"/>
+            </linearGradient>
+
+            <!-- Glow Filters for traveling packets -->
+            <filter id="packet-glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#38bdf8"/>
+            </filter>
+            <filter id="packet-glow-red" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ef4444"/>
+            </filter>
+            <filter id="packet-glow-emerald" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981"/>
+            </filter>
+            <filter id="packet-glow-amber" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f59e0b"/>
+            </filter>
+          </defs>
+
+          <!-- PATH 1: Node A (Edge) -> Node B (Gateway) -->
+          <!-- Coordinates: (120, 200) to (380, 200) -->
+          <path id="path-a-to-b" d="M 120 200 C 230 200, 270 200, 380 200"
+            fill="none" stroke="url(#grad-edge-to-gateway)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
+
+          <!-- PATH 2: Node B (Gateway) -> Node C (Safety Engine) -->
+          <!-- Coordinates: (480, 200) to (740, 75) -->
+          <path id="path-b-to-c" d="M 480 200 C 580 200, 640 75, 740 75"
+            fill="none" stroke="url(#grad-gateway-to-safety)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
+
+          <!-- PATH 3: Node B (Gateway) -> Node D (Vertex AI Hub) -->
+          <!-- Coordinates: (480, 200) to (740, 200) -->
+          <path id="path-b-to-d" d="M 480 200 C 580 200, 640 200, 740 200"
+            fill="none" stroke="url(#grad-gateway-to-vertex)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
+
+          <!-- PATH 4: Node B (Gateway) -> Node E (Cloud Firestore) -->
+          <!-- Coordinates: (480, 200) to (740, 325) -->
+          <path id="path-b-to-e" d="M 480 200 C 580 200, 640 325, 740 325"
+            fill="none" stroke="url(#grad-gateway-to-firestore)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
+
+          <!-- DYNAMIC TRAVELING PACKETS LAYER (Injected & Animated via JS) -->
+          <g id="dynamic-packets-layer"></g>
+        </svg>
+
+        <!-- TOPOLOGY NODE CARDS (Positioned via Grid/Flex percentages for absolute responsiveness) -->
+        <div class="absolute inset-0 grid grid-cols-12 grid-rows-3 gap-4 pointer-events-none p-2">
+          
+          <!-- NODE A: EDGE MOBILE (ANDROID / FLUTTER) -->
+          <div class="col-span-3 row-start-2 flex items-center justify-center">
+            <div id="node-edge" class="pointer-events-auto w-full max-w-[240px] bg-slate-900/90 border border-sky-500/40 rounded-2xl p-4 shadow-xl shadow-sky-950/40 transition-all duration-300 hover:border-sky-400 group">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-white tracking-wide">NODE A: Edge Mobile</h3>
+                    <span class="text-[10px] text-sky-400 font-mono">Android • Flutter</span>
+                  </div>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+              </div>
+              <p class="text-[11px] text-slate-400 font-mono leading-tight">LiteRT • Gemma 4 E4B • QR Mesh</p>
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono">
+                <span class="text-slate-500">Payload Source:</span>
+                <span class="text-sky-300">Dart/3.13 (dart:io)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- NODE B: CLOUD RUN GATEWAY (baton-api) -->
+          <div class="col-span-4 col-start-4 row-start-2 flex items-center justify-center">
+            <div id="node-gateway" class="pointer-events-auto w-full max-w-[280px] bg-slate-900/90 border border-sky-500/40 rounded-2xl p-4 shadow-xl shadow-sky-950/40 transition-all duration-300 hover:border-sky-400">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                    <i data-lucide="cloud-lightning" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-white tracking-wide">NODE B: Cloud Run Gateway</h3>
+                    <span class="text-[10px] text-sky-400 font-mono">baton-api • Serverless</span>
+                  </div>
+                </div>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-sky-500/10 text-sky-300 border border-sky-500/20">asia-se1</span>
+              </div>
+              <p class="text-[11px] text-slate-400 font-mono leading-tight">FastAPI Ingestion & Noise Filter</p>
+              <div class="mt-3 pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                <div>
+                  <span class="text-slate-500">Revision:</span>
+                  <div class="text-slate-300 truncate" id="node-b-rev">baton-api-00007</div>
+                </div>
+                <div>
+                  <span class="text-slate-500">Avg Latency:</span>
+                  <div class="text-emerald-400" id="node-b-lat">~18ms</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN NODES: C, D, E (Stacked) -->
+          <div class="col-span-5 col-start-8 row-span-3 flex flex-col justify-between py-1">
+            
+            <!-- NODE C: DETERMINISTIC SAFETY ENGINE (Top Right) -->
+            <div class="flex justify-start">
+              <div id="node-safety" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-red-500/40 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-red-400">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                      <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-white tracking-wide">NODE C: Deterministic Safety Engine</h3>
+                      <span class="text-[10px] text-red-400 font-mono">Rules R1-R4 • SCADA Interlock</span>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30" id="node-c-status">
+                    CRITICAL (R1)
+                  </span>
+                </div>
+                <div class="text-[10px] font-mono text-slate-300 bg-red-950/30 border border-red-900/40 rounded-lg p-1.5 flex items-center justify-between mt-1">
+                  <span>Target: <strong class="text-red-400">P-201B</strong></span>
+                  <span class="text-slate-400">Physical: <strong class="text-amber-400">OPEN</strong> vs Assert: <strong class="text-red-400">ISOLATED</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- NODE D: VERTEX AI AGENT HUB (Center Right) -->
+            <div class="flex justify-start">
+              <div id="node-vertex" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-amber-500/40 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-amber-400">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                      <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-white tracking-wide">NODE D: Vertex AI Agent Hub</h3>
+                      <span class="text-[10px] text-amber-400 font-mono">Gemini 2.5 Flash • Briefings</span>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    ONLINE
+                  </span>
+                </div>
+                <p class="text-[10px] text-slate-300 font-sans line-clamp-2 italic bg-slate-950/60 p-1.5 rounded-lg border border-slate-800" id="node-d-summary">
+                  "Pump P-201B requires immediate attention due to active Isolation Mismatch against SCADA telemetry."
+                </p>
+              </div>
+            </div>
+
+            <!-- NODE E: CLOUD FIRESTORE & EVENT LEDGER (Bottom Right) -->
+            <div class="flex justify-start">
+              <div id="node-firestore" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-purple-500/40 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-purple-400">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                      <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-white tracking-wide">NODE E: Cloud Firestore & Ledger</h3>
+                      <span class="text-[10px] text-purple-400 font-mono">Immutable Audit Trail</span>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    SYNCED
+                  </span>
+                </div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-1">
+                  <span>Ledger Commits: <strong class="text-purple-300" id="ledger-commit-count">24 entries</strong></span>
+                  <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Validated</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
+
       </div>
+
     </section>
 
-    <!-- ------------------------------------------------------------ -->
-    <!-- RIGHT: INCIDENT INVESTIGATOR & SAFETY HERO (7 Cols)           -->
-    <!-- ------------------------------------------------------------ -->
-    <section class="lg:col-span-7 flex flex-col gap-6">
-
-      <!-- INCIDENT INVESTIGATOR BANNER (Appears if Cloud Run 500/400 occurred) -->
-      <div id="incident-banner" class="rounded-2xl p-6 bg-red-950/40 border border-red-500/30 transition-all flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-            <span class="text-xs font-mono font-bold uppercase tracking-wider text-red-400">Cloud Run Incident Detected</span>
-          </div>
-          <span id="incident-time" class="text-xs font-mono text-slate-400">Recent</span>
-        </div>
-
-        <h4 id="incident-title" class="text-base font-bold text-red-300">
-          HTTP 500 Internal Server Error Logged on /api/transcribe
-        </h4>
-
-        <p id="incident-desc" class="text-xs text-slate-300 leading-relaxed font-sans">
-          Client <code class="text-amber-400 bg-slate-900 px-1 py-0.5 rounded font-mono">Dart/3.13 (dart:io)</code> sent audio payload that triggered an audio stream format exception. The system has automatically recovered and applied magic-byte header adaptation for Gemini 2.5 Flash.
-        </p>
-
-        <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs font-mono text-slate-400">
-          <span>Client IP: <b class="text-slate-300" id="incident-ip">49.37.178.244</b></span>
-          <span class="text-emerald-400 font-semibold">Status: Handled & Logged</span>
-        </div>
-      </div>
-
-      <!-- FOCAL POINT: SAFETY GATE ALERT -->
-      <div id="safety-hero-card" class="rounded-2xl p-8 transition-all duration-300 bg-red-950/30 border border-red-500/20">
-        <div class="flex items-start gap-5">
-          <!-- Big Icon -->
-          <div id="hero-icon-container" class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-            <svg id="hero-icon-alert" class="w-9 h-9 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <svg id="hero-icon-check" class="w-9 h-9 text-emerald-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1.5">
-              <span id="hero-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300">
-                SAFETY GATE LOCKED
-              </span>
-              <span id="hero-rule-id" class="text-xs font-mono text-slate-400">Rule R1</span>
+    <!-- BOTTOM SECTION: SPLIT OBSERVABILITY & DEVELOPER TRACE DRAWER -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+      
+      <!-- PANEL LEFT: LIVE TELEMETRY & RULES DECISION PANEL (5 Cols) -->
+      <div class="lg:col-span-5 bg-slate-900/70 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        
+        <div>
+          <!-- Header -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800/80">
+            <div class="flex items-center space-x-3">
+              <div class="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <i data-lucide="gauge" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Safety Gate Decision Panel</h3>
+                <p class="text-xs text-slate-400">Real-time discrepancy check vs SCADA DCS telemetry</p>
+              </div>
             </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider" id="decision-gate-badge">
+              CRITICAL GATE
+            </span>
+          </div>
 
-            <!-- Massive Headline -->
-            <h3 id="hero-title" class="text-2xl font-extrabold tracking-tight text-red-400 leading-snug">
-              CRITICAL: Physical Telemetry Mismatch on P-201B
-            </h3>
-
-            <!-- Plain English description -->
-            <p id="hero-description" class="text-sm text-slate-300 mt-2.5 leading-relaxed">
-              Operator logged pump as ISOLATED, but plant sensors detect it is OPEN (12.4 bar). Handover transfer is physically locked.
+          <!-- Violation Highlight Card -->
+          <div class="mt-5 p-4 rounded-xl border transition-all duration-300" id="conflict-card-container">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono font-bold uppercase px-2 py-0.5 rounded" id="conflict-rule-id">RULE R1 VIOLATION</span>
+              <span class="text-xs font-mono text-slate-400" id="conflict-asset-tag">ASSET: P-201B</span>
+            </div>
+            <h4 class="text-base font-bold text-white" id="conflict-title">Isolation Mismatch: P-201B</h4>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed" id="conflict-desc">
+              Log asserts asset P-201B as ISOLATED, but SCADA sensor telemetry shows valve/pump is physically OPEN at 12.4 bar pressure.
             </p>
+          </div>
 
-            <!-- Key Fact Pills -->
-            <div id="hero-facts" class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-800/80 text-xs font-mono">
-              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Asset: <b class="text-amber-400">P-201B</b></span>
-              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">DCS Sensor: <b class="text-red-400">OPEN (12.4 bar)</b></span>
-              <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Field Assertion: <b class="text-slate-400">ISOLATED</b></span>
+          <!-- Physical vs Assertion Comparison Grid -->
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <span class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Field Assertion (Edge)</span>
+              <div class="text-sm font-mono font-bold text-sky-400 mt-1" id="val-field-assert">ISOLATED</div>
+              <span class="text-[10px] text-slate-400">Technician Arun (10:30)</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80">
+              <span class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Live DCS Physical State</span>
+              <div class="text-sm font-mono font-bold text-red-400 mt-1" id="val-dcs-state">OPEN (12.4 bar)</div>
+              <span class="text-[10px] text-slate-400">Sensor Tag #PT-201B</span>
+            </div>
+          </div>
+
+          <!-- SCADA Plant Telemetry Sensors Mini-Grid -->
+          <div class="mt-4">
+            <h5 class="text-xs font-semibold text-slate-400 uppercase tracking-wider font-mono mb-2">Active DCS Telemetry Sensors</h5>
+            <div class="grid grid-cols-3 gap-2 text-center" id="dcs-sensors-grid">
+              <!-- Dynamically populated -->
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- GEMINI 2.5 FLASH EXECUTIVE BRIEF -->
-      <div class="rounded-2xl p-7 bg-slate-900/50 border border-slate-800/60 flex flex-col gap-3.5">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-            </svg>
-            <span>Supervisor Executive Brief</span>
-          </div>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            GEMINI 2.5 FLASH
+        <!-- Action / Protocol Status Footer -->
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono">
+          <span class="text-slate-400">Handover Protocol:</span>
+          <span class="text-red-400 font-bold flex items-center gap-1.5" id="protocol-status-text">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i> TRANSFER BLOCKED UNTIL RESOLVED
           </span>
         </div>
 
-        <blockquote id="agent-summary-text" class="text-sm text-slate-200 leading-relaxed font-sans italic border-l-2 border-amber-500/60 pl-4 my-1">
-          "Awaiting edge telemetry flush to compose shift-handover intelligence brief..."
-        </blockquote>
+      </div>
 
-        <div class="flex items-center justify-between text-xs font-mono text-slate-500 pt-2 border-t border-slate-800/40">
-          <span id="brief-citations">Evidence: Standby</span>
-          <span id="brief-timestamp">Live</span>
+      <!-- PANEL RIGHT: STRUCTURED DEVELOPER LOG & STREAM (7 Cols) -->
+      <div class="lg:col-span-7 bg-slate-900/70 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        
+        <!-- Header & Category Filter Tabs -->
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+            <div class="flex items-center space-x-2.5">
+              <div class="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Cloud Run Substantive Logs</h3>
+                <p class="text-xs text-slate-400">Filtered real-time request telemetry (polling noise eliminated)</p>
+              </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+              <button onclick="setLogFilter('ALL')" id="tab-ALL" class="px-3 py-1 rounded-lg text-white bg-sky-600 font-medium transition-colors">
+                All (<span id="count-tab-all">28</span>)
+              </button>
+              <button onclick="setLogFilter('TRANSCRIBE')" id="tab-TRANSCRIBE" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+                Audio ASR (<span id="count-tab-asr">22</span>)
+              </button>
+              <button onclick="setLogFilter('BATCH_SYNC')" id="tab-BATCH_SYNC" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+                Batch Sync (<span id="count-tab-sync">2</span>)
+              </button>
+              <button onclick="setLogFilter('ANOMALY')" id="tab-ANOMALY" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
+                Conflicts (<span id="count-tab-anom">4</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Incident Alert Banner (Shows when 500 errors or anomalies detected) -->
+          <div id="incident-investigator-banner" class="mt-4 p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 flex items-start space-x-3">
+            <div class="p-1.5 rounded-lg bg-red-500/20 text-red-400 mt-0.5">
+              <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-red-300 font-mono">INCIDENT TRACE: 4 HTTP 500 ERRORS MITIGATED</h4>
+                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">Magic Byte Patch Active</span>
+              </div>
+              <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                Detected 4 consecutive HTTP 500 errors on <code class="text-red-300 bg-red-950/60 px-1 py-0.5 rounded">POST /api/transcribe</code> from client IP <span class="font-mono text-amber-300">49.37.178.244</span> (Dart/3.13). Fixed via magic byte auto-detection.
+              </p>
+            </div>
+          </div>
+
+          <!-- Structured Log Feed (Scrollable) -->
+          <div class="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1" id="logs-container">
+            <!-- Dynamically populated with structured cards & accordion JSON dropdowns -->
+          </div>
         </div>
+
+        <!-- Footer status bar -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono text-slate-500">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Stream polling active (2s interval)
+          </span>
+          <span id="last-updated-time">Updated: Just now</span>
+        </div>
+
       </div>
 
     </section>
 
   </main>
 
-  <!-- ============================================================== -->
-  <!-- MODAL: INSPECT LOG ENTRY PAYLOAD                               -->
-  <!-- ============================================================== -->
-  <div id="json-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
-      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-        <h3 class="text-xs font-bold font-mono text-amber-400 uppercase tracking-wider" id="modal-title">Cloud Run Log Details</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 transition">
-          ✕ CLOSE
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto flex-1 font-mono text-xs">
-        <pre id="modal-json" class="text-emerald-400 bg-slate-950 p-5 rounded-xl overflow-x-auto border border-slate-800/60 leading-relaxed"></pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- JAVASCRIPT: LOG PARSING, POLLING & DYNAMIC RENDERING           -->
-  <!-- ============================================================== -->
+  <!-- JAVASCRIPT ORCHESTRATION & ANIMATIONS -->
   <script>
-    let currentFilter = 'all';
-    let allCloudLogs = [];
-    let anomalies = [];
-    let transcriptions = [];
-    let shiftEvents = [];
-    let selectedLogId = null;
+    // State variables
+    let currentLogFilter = 'ALL';
+    let cachedLogs = [];
+    let lastKnownEventId = null;
+    let isPolling = false;
 
-    async function pollDashboard() {
-      try {
-        const response = await fetch('/api/v1/dashboard/stream');
-        if (!response.ok) return;
-        const data = await response.json();
-
-        allCloudLogs = data.cloud_logs || [];
-        anomalies = data.anomalies || [];
-        transcriptions = data.transcriptions || [];
-        shiftEvents = data.events || [];
-
-        // Update counts
-        document.getElementById('count-all').textContent = allCloudLogs.length;
-        document.getElementById('count-anomalies').textContent = anomalies.length;
-        document.getElementById('count-transcribe').textContent = transcriptions.length;
-        document.getElementById('count-sync').textContent = shiftEvents.length;
-
-        // Update Cloud Flow Stats
-        if (data.cloud_flow) {
-          const flow = data.cloud_flow;
-          if (flow.edge) {
-            document.getElementById('flow-edge-stat').textContent = `${transcriptions.length} Voice Notes • Dart/3.13`;
-          }
-          if (flow.cloud_run) {
-            document.getElementById('flow-run-stat').textContent = `Requests: ${allCloudLogs.length} • baton-api`;
-            document.getElementById('flow-run-sub').textContent = anomalies.length > 0 ? `${anomalies.length} Incident(s) Logged` : 'All Systems Healthy';
-          }
+    // Simulation Data Payloads
+    const PAYLOAD_NOMINAL = {
+      device_id: "pixel7-edge-unit1",
+      operator_id: "TECH-PRIYA-09",
+      shift_name: "DAY-SHIFT-B",
+      unit_name: "HYDROCRACKER-01",
+      capsules: [
+        {
+          uuid: "capsule-" + Date.now(),
+          timestamp: new Date().toISOString(),
+          category: "EQUIPMENT",
+          asset_tag: "TK-101",
+          asserted_state: "OPEN",
+          text_transcript: "Feed Tank TK-101 inlet valve OPEN and operating nominal at 82% capacity.",
+          intent_severity: "INFO"
         }
+      ]
+    };
 
-        renderLogsFeed();
-        renderIncidentBanner();
-        renderSafetyHero();
-        renderBrief();
-      } catch (err) {
-        console.warn('Dashboard poll error:', err);
+    const PAYLOAD_CONFLICT = {
+      device_id: "pixel7-edge-unit1",
+      operator_id: "TECH-ARUN-42",
+      shift_name: "NIGHT-SHIFT-A",
+      unit_name: "HYDROCRACKER-01",
+      capsules: [
+        {
+          uuid: "capsule-" + Date.now(),
+          timestamp: new Date().toISOString(),
+          category: "ISOLATION",
+          asset_tag: "P-201B",
+          asserted_state: "ISOLATED",
+          text_transcript: "Pump P-201B isolated and lock applied at 10:30 by Arun",
+          intent_severity: "CRITICAL"
+        }
+      ]
+    };
+
+    // Initialize Lucide Icons
+    function refreshIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
       }
     }
 
-    function setLogFilter(filter) {
-      currentFilter = filter;
-      ['all', 'anomalies', 'transcribe', 'sync'].forEach(t => {
-        const btn = document.getElementById(`tab-${t}`);
-        if (t === filter) {
-          btn.className = 'px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 transition';
+    // ----------------------------------------------------
+    // SVG DATA PACKET ANIMATION MECHANICS
+    // ----------------------------------------------------
+    function animatePacket(pathId, color = '#38bdf8', duration = 1200, onComplete = null) {
+      const svg = document.getElementById('topology-svg');
+      const path = document.getElementById(pathId);
+      const layer = document.getElementById('dynamic-packets-layer');
+      if (!path || !layer) return;
+
+      const pathLength = path.getTotalLength();
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('r', '5.5');
+      circle.setAttribute('fill', color);
+      circle.setAttribute('class', 'traveling-packet');
+      circle.setAttribute('filter', `drop-shadow(0 0 6px ${color})`);
+      layer.appendChild(circle);
+
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease-out cubic curve
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const point = path.getPointAtLength(ease * pathLength);
+
+        circle.setAttribute('cx', point.x);
+        circle.setAttribute('cy', point.y);
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
         } else {
-          btn.className = 'px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition';
+          layer.removeChild(circle);
+          if (onComplete) onComplete();
         }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    // Trigger full multi-node animated flow across topology
+    function triggerFullTopologyFlow(type = 'NOMINAL') {
+      const isConflict = (type === 'CONFLICT');
+      const primaryColor = isConflict ? '#ef4444' : '#10b981';
+
+      // 1. Flash Edge Node
+      flashNode('node-edge', 'node-pulse-blue');
+
+      // 2. Animate Packet Node A -> Node B
+      animatePacket('path-a-to-b', '#38bdf8', 750, () => {
+        // Packet hits Node B (Gateway)
+        flashNode('node-gateway', 'node-pulse-blue');
+
+        // Split packet into C, D, E simultaneously
+        // Branch to Node C (Safety Engine)
+        animatePacket('path-b-to-c', primaryColor, 750, () => {
+          flashNode('node-safety', isConflict ? 'node-pulse-red' : 'node-pulse-green');
+          updateSafetyNodeUI(isConflict);
+        });
+
+        // Branch to Node D (Vertex AI)
+        animatePacket('path-b-to-d', '#f59e0b', 800, () => {
+          flashNode('node-vertex', 'node-pulse-amber');
+          updateVertexNodeUI(isConflict);
+        });
+
+        // Branch to Node E (Firestore Ledger)
+        animatePacket('path-b-to-e', '#a855f7', 850, () => {
+          flashNode('node-firestore', 'node-pulse-blue');
+          const commitEl = document.getElementById('ledger-commit-count');
+          if (commitEl) {
+            const cur = parseInt(commitEl.textContent) || 24;
+            commitEl.textContent = (cur + 1) + " entries";
+          }
+        });
       });
-      renderLogsFeed();
     }
 
-    function renderLogsFeed() {
-      const container = document.getElementById('cloud-log-feed');
-      const countBadge = document.getElementById('log-count-badge');
+    function flashNode(nodeId, pulseClass, duration = 1600) {
+      const el = document.getElementById(nodeId);
+      if (!el) return;
+      el.classList.add(pulseClass);
+      setTimeout(() => {
+        el.classList.remove(pulseClass);
+      }, duration);
+    }
 
-      let filtered = allCloudLogs;
-      if (currentFilter === 'anomalies') filtered = anomalies;
-      else if (currentFilter === 'transcribe') filtered = transcriptions;
-      else if (currentFilter === 'sync') filtered = allCloudLogs.filter(l => l.category === 'BATCH_SYNC');
-
-      countBadge.textContent = `${filtered.length} Substantive`;
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="p-8 text-center rounded-2xl bg-slate-900/40 text-slate-500 text-xs">
-            <p>No substantive events in this view</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = filtered.map(log => {
-        const isAnomaly = log.category === 'ANOMALY' || (log.status && log.status >= 400);
-        const isTranscribe = log.category === 'TRANSCRIBE';
-        const isSync = log.category === 'BATCH_SYNC';
-
-        let badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">200 OK</span>`;
-        if (isAnomaly) {
-          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950 text-red-400 border border-red-500/40">${log.status || 500} ERROR</span>`;
-        } else if (log.status === 409) {
-          badge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-500/30">409 GATED</span>`;
+    function updateSafetyNodeUI(isConflict) {
+      const statusEl = document.getElementById('node-c-status');
+      const cardEl = document.getElementById('node-safety');
+      if (statusEl && cardEl) {
+        if (isConflict) {
+          statusEl.textContent = 'CRITICAL (R1)';
+          statusEl.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30';
+          cardEl.className = 'pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-red-500/60 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-red-400';
+        } else {
+          statusEl.textContent = 'NOMINAL (0 CONFLICTS)';
+          statusEl.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+          cardEl.className = 'pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-emerald-500/60 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-emerald-400';
         }
-
-        let icon = '⚡';
-        if (isTranscribe) icon = '🎙️';
-        else if (isAnomaly) icon = '⚠️';
-        else if (isSync) icon = '🛡️';
-
-        const timeFormatted = new Date(log.timestamp).toLocaleTimeString();
-        const clientDesc = log.user_agent ? log.user_agent.split(' ')[0] : (log.ip || 'Cloud Client');
-
-        return `
-          <div onclick="selectLog('${log.id}')" class="p-4 rounded-xl transition duration-150 cursor-pointer ${
-            isAnomaly 
-              ? 'bg-red-950/20 border-l-4 border-red-500 hover:bg-red-950/30' 
-              : 'bg-slate-900/40 hover:bg-slate-900/80 border-l-4 border-slate-700'
-          }">
-            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-1.5">
-              <span class="flex items-center gap-1.5 font-semibold text-slate-200">
-                <span>${icon}</span>
-                <span>${log.method || 'POST'} ${log.url || '/api/transcribe'}</span>
-              </span>
-              <span>${timeFormatted}</span>
-            </div>
-
-            <p class="text-xs text-slate-300 font-sans line-clamp-2 mb-2 leading-relaxed">
-              ${log.summary}
-            </p>
-
-            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px] font-mono">
-              <span class="text-slate-400">Client: <b class="text-amber-400">${clientDesc}</b></span>
-              <div class="flex items-center gap-2">
-                ${badge}
-                <button onclick="event.stopPropagation(); viewRawJson('${log.id}')" class="px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
-                  Details
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Render Incident Banner
-    function renderIncidentBanner() {
-      const banner = document.getElementById('incident-banner');
-      if (anomalies.length > 0) {
-        banner.classList.remove('hidden');
-        const latestAnomaly = anomalies[0];
-        document.getElementById('incident-time').textContent = new Date(latestAnomaly.timestamp).toLocaleTimeString();
-        document.getElementById('incident-title').textContent = `${latestAnomaly.status || 500} Incident on ${latestAnomaly.url || '/api/transcribe'}`;
-        document.getElementById('incident-ip').textContent = latestAnomaly.ip || latestAnomaly.user_agent || '49.37.178.244';
-      } else {
-        banner.classList.add('hidden');
       }
     }
 
-    // Render Hero Safety Gate
-    function renderSafetyHero() {
-      const topEvent = shiftEvents[0] || {};
-      const isConflict = topEvent.has_critical_conflict || topEvent.sync_status === 'CONFLICT_DETECTED';
-
-      const heroCard = document.getElementById('safety-hero-card');
-      const iconAlert = document.getElementById('hero-icon-alert');
-      const iconCheck = document.getElementById('hero-icon-check');
-      const iconBox = document.getElementById('hero-icon-container');
-      const badge = document.getElementById('hero-badge');
-      const ruleId = document.getElementById('hero-rule-id');
-      const title = document.getElementById('hero-title');
-      const desc = document.getElementById('hero-description');
-      const facts = document.getElementById('hero-facts');
-
-      if (isConflict) {
-        heroCard.className = 'rounded-2xl p-8 transition-all duration-300 bg-red-950/30 border border-red-500/25';
-        iconBox.className = 'w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0';
-        iconAlert.classList.remove('hidden');
-        iconCheck.classList.add('hidden');
-
-        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300';
-        badge.textContent = 'SAFETY GATE LOCKED';
-
-        const topConflict = (topEvent.conflicts && topEvent.conflicts[0]) || {};
-        ruleId.textContent = topConflict.rule_id ? `Rule ${topConflict.rule_id}` : 'Rule R1';
-
-        title.className = 'text-2xl font-extrabold tracking-tight text-red-400 leading-snug';
-        title.textContent = topConflict.title ? `CRITICAL: ${topConflict.title}` : 'CRITICAL: Physical Telemetry Mismatch on P-201B';
-
-        desc.textContent = topConflict.description || 'Operator asserted pump is ISOLATED, but physical SCADA sensors report it OPEN (12.4 bar). Shift transfer locked.';
-
-        facts.innerHTML = `
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Asset: <b class="text-amber-400">P-201B</b></span>
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">DCS Sensor: <b class="text-red-400">OPEN (12.4 bar)</b></span>
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Field Assertion: <b class="text-slate-400">ISOLATED</b></span>
-        `;
-      } else {
-        heroCard.className = 'rounded-2xl p-8 transition-all duration-300 bg-emerald-950/30 border border-emerald-500/25';
-        iconBox.className = 'w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0';
-        iconAlert.classList.add('hidden');
-        iconCheck.classList.remove('hidden');
-
-        badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300';
-        badge.textContent = 'ALL SYSTEMS NOMINAL';
-        ruleId.textContent = 'Rules Reconciled';
-
-        title.className = 'text-2xl font-extrabold tracking-tight text-emerald-400 leading-snug';
-        title.textContent = 'NOMINAL: Telemetry Reconciled Across All Assets';
-
-        desc.textContent = 'All physical states reported by field technicians match live control room sensors. Unit clear for shift transfer.';
-
-        facts.innerHTML = `
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Equipment Status: <b class="text-emerald-400">100% Verified</b></span>
-          <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-300">Active Work Permits: <b class="text-emerald-400">Nominal</b></span>
-        `;
+    function updateVertexNodeUI(isConflict) {
+      const summaryEl = document.getElementById('node-d-summary');
+      if (summaryEl) {
+        if (isConflict) {
+          summaryEl.textContent = '"Pump P-201B requires immediate attention due to active Isolation Mismatch against SCADA telemetry."';
+        } else {
+          summaryEl.textContent = '"Shift handover verified nominal. Asset TK-101 operational, all safety criteria compliant."';
+        }
       }
     }
 
-    // Render Gemini Brief
-    function renderBrief() {
-      const topEvent = shiftEvents[0] || {};
-      const summaryText = document.getElementById('agent-summary-text');
-      const citations = document.getElementById('brief-citations');
-      const timestamp = document.getElementById('brief-timestamp');
+    // ----------------------------------------------------
+    // DEMO SIMULATION BUTTON HANDLERS
+    // ----------------------------------------------------
+    async function triggerSimulation(type) {
+      triggerFullTopologyFlow(type);
 
-      summaryText.textContent = topEvent.summary 
-        ? `"${topEvent.summary}"`
-        : `"All units reconciled. Plant parameters nominal for incoming shift."`;
-
-      citations.textContent = (topEvent.conflicts && topEvent.conflicts.length > 0)
-        ? `Citations: ${topEvent.conflicts.flatMap(c => c.evidence_ids || []).slice(0, 2).join(', ')}`
-        : 'Telemetry Reconciled';
-
-      timestamp.textContent = new Date(topEvent.processed_at || topEvent.timestamp || new Date()).toLocaleTimeString();
-    }
-
-    function selectLog(id) {
-      selectedLogId = id;
-    }
-
-    function viewRawJson(id) {
-      const log = allCloudLogs.find(l => l.id === id) || anomalies.find(l => l.id === id);
-      if (!log) return;
-      document.getElementById('modal-title').textContent = `Log Entry // ${log.category || 'EVENT'}`;
-      document.getElementById('modal-json').textContent = JSON.stringify(log, null, 2);
-      document.getElementById('json-modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('json-modal').classList.add('hidden');
-    }
-
-    // Demo Simulation Buttons
-    async function triggerSimulatedSync(type) {
-      const isConflict = type === 'conflict';
-      const payload = isConflict ? {
-        device_id: "pixel7-edge-unit1",
-        operator_id: "TECH-ARUN-42",
-        shift_name: "NIGHT-SHIFT-A",
-        unit_name: "HYDROCRACKER-01",
-        capsules: [
-          {
-            uuid: "capsule-" + Math.floor(Math.random() * 1000),
-            timestamp: new Date().toISOString(),
-            category: "ISOLATION",
-            asset_tag: "P-201B",
-            asserted_state: "ISOLATED",
-            text_transcript: "Pump P-201B isolated and lock applied at 10:30 by Arun",
-            intent_severity: "CRITICAL"
-          }
-        ]
-      } : {
-        device_id: "pixel7-edge-unit1",
-        operator_id: "TECH-SARAH-19",
-        shift_name: "DAY-SHIFT-B",
-        unit_name: "HYDROCRACKER-01",
-        capsules: [
-          {
-            uuid: "capsule-" + Math.floor(Math.random() * 1000),
-            timestamp: new Date().toISOString(),
-            category: "EQUIPMENT",
-            asset_tag: "V-102",
-            asserted_state: "CLOSED",
-            text_transcript: "Valve V-102 torque verified closed after tank transfer",
-            intent_severity: "INFO"
-          }
-        ]
-      };
-
+      const payload = (type === 'CONFLICT') ? PAYLOAD_CONFLICT : PAYLOAD_NOMINAL;
+      
       try {
-        await fetch('/api/v1/handover/batch_sync', {
+        const resp = await fetch('/api/v1/handover/batch_sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        await pollDashboard();
-      } catch (e) {
-        console.error('Simulation error:', e);
+        const data = await resp.json();
+        
+        // Trigger immediate poll to update dashboard stream
+        setTimeout(() => pollTelemetry(false), 500);
+      } catch (err) {
+        console.warn("Simulation post error (local mock active):", err);
       }
     }
 
-    // Start poll loop
-    pollDashboard();
-    setInterval(pollDashboard, 2000);
+    // ----------------------------------------------------
+    // REAL-TIME TELEMETRY POLLING (/api/v1/dashboard/stream)
+    // ----------------------------------------------------
+    async function pollTelemetry(isManual = false) {
+      if (isPolling) return;
+      isPolling = true;
+
+      const refreshIcon = document.getElementById('icon-refresh');
+      if (isManual && refreshIcon) refreshIcon.classList.add('animate-spin');
+
+      try {
+        const res = await fetch('/api/v1/dashboard/stream');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderDashboardData(data);
+      } catch (err) {
+        console.error("Telemetry fetch error:", err);
+      } finally {
+        isPolling = false;
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      }
+    }
+
+    // RENDER TELEMETRY PAYLOAD TO UI
+    function renderDashboardData(data) {
+      // 1. Update Top Metrics Pills
+      const stats = data.stats || {};
+      document.getElementById('pill-total-transcriptions').textContent = stats.total_transcriptions ?? 22;
+      document.getElementById('pill-total-syncs').textContent = stats.total_syncs ?? 2;
+      document.getElementById('pill-total-anomalies').textContent = stats.total_anomalies ?? 4;
+
+      document.getElementById('count-tab-all').textContent = stats.total_substantive ?? 28;
+      document.getElementById('count-tab-asr').textContent = stats.total_transcriptions ?? 22;
+      document.getElementById('count-tab-sync').textContent = stats.total_syncs ?? 2;
+      document.getElementById('count-tab-anom').textContent = stats.total_anomalies ?? 4;
+
+      // 2. Check for new incoming event to trigger animation
+      const events = data.events || [];
+      if (events.length > 0) {
+        const latestEvent = events[0];
+        if (lastKnownEventId && latestEvent.id !== lastKnownEventId) {
+          triggerFullTopologyFlow(latestEvent.has_critical_conflict ? 'CONFLICT' : 'NOMINAL');
+        }
+        lastKnownEventId = latestEvent.id;
+        renderDecisionPanel(latestEvent, data.dcs_telemetry);
+      }
+
+      // 3. Render DCS Telemetry Sensors
+      renderDcsSensors(data.dcs_telemetry);
+
+      // 4. Update Logs Cache and Render
+      cachedLogs = data.cloud_logs || [];
+      renderLogFeed();
+
+      // 5. Update Timestamp
+      document.getElementById('last-updated-time').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+      refreshIcons();
+    }
+
+    // RENDER DECISION PANEL (LEFT PANEL)
+    function renderDecisionPanel(event, dcs) {
+      const isCritical = event.has_critical_conflict;
+      const conflicts = event.conflicts || [];
+      const primaryConflict = conflicts[0];
+
+      const badge = document.getElementById('decision-gate-badge');
+      const card = document.getElementById('conflict-card-container');
+      const ruleId = document.getElementById('conflict-rule-id');
+      const assetTag = document.getElementById('conflict-asset-tag');
+      const title = document.getElementById('conflict-title');
+      const desc = document.getElementById('conflict-desc');
+      const statusText = document.getElementById('protocol-status-text');
+      const gateStatePill = document.getElementById('pill-gate-state');
+
+      if (isCritical && primaryConflict) {
+        badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-red-500/20 text-red-300 border border-red-500/30";
+        badge.textContent = "CRITICAL GATE";
+        gateStatePill.textContent = "LOCKED (R1)";
+        gateStatePill.className = "text-red-400 font-semibold";
+
+        card.className = "mt-5 p-4 rounded-xl border bg-red-950/30 border-red-500/40";
+        ruleId.className = "text-xs font-mono font-bold uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-300";
+        ruleId.textContent = primaryConflict.rule_id ? `RULE ${primaryConflict.rule_id} VIOLATION` : 'CRITICAL CONFLICT';
+        assetTag.textContent = "ASSET: P-201B";
+        title.textContent = primaryConflict.title || "Isolation Mismatch: P-201B";
+        desc.textContent = primaryConflict.description || event.summary;
+
+        document.getElementById('val-field-assert').textContent = "ISOLATED";
+        document.getElementById('val-field-assert').className = "text-sm font-mono font-bold text-sky-400 mt-1";
+        document.getElementById('val-dcs-state').textContent = "OPEN (12.4 bar)";
+        document.getElementById('val-dcs-state').className = "text-sm font-mono font-bold text-red-400 mt-1";
+
+        statusText.innerHTML = `<i data-lucide="lock" class="w-3.5 h-3.5"></i> TRANSFER BLOCKED UNTIL RESOLVED`;
+        statusText.className = "text-red-400 font-bold flex items-center gap-1.5";
+      } else {
+        badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        badge.textContent = "NOMINAL (READY)";
+        gateStatePill.textContent = "OPEN (CLEAR)";
+        gateStatePill.className = "text-emerald-400 font-semibold";
+
+        card.className = "mt-5 p-4 rounded-xl border bg-emerald-950/20 border-emerald-500/30";
+        ruleId.className = "text-xs font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300";
+        ruleId.textContent = "SAFETY CHECKS NOMINAL";
+        assetTag.textContent = "ASSET: TK-101";
+        title.textContent = "Zero Interlock Violations";
+        desc.textContent = event.summary || "All offline capsule logs synchronized successfully without conflicting with active DCS sensor states.";
+
+        document.getElementById('val-field-assert').textContent = "OPEN (NOMINAL)";
+        document.getElementById('val-field-assert').className = "text-sm font-mono font-bold text-emerald-400 mt-1";
+        document.getElementById('val-dcs-state').textContent = "OPEN (82% CAP)";
+        document.getElementById('val-dcs-state').className = "text-sm font-mono font-bold text-emerald-400 mt-1";
+
+        statusText.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> SHIFT HANDOVER AUTHORIZED`;
+        statusText.className = "text-emerald-400 font-bold flex items-center gap-1.5";
+      }
+    }
+
+    // RENDER DCS SENSORS GRID
+    function renderDcsSensors(dcs) {
+      const container = document.getElementById('dcs-sensors-grid');
+      if (!container) return;
+
+      if (!dcs || Object.keys(dcs).length === 0) {
+        dcs = {
+          "P-201B": { status: "OPEN", pressure: 12.4, temp_c: 64.2 },
+          "V-102": { status: "CLOSED", pressure: 0.1, temp_c: 24.0 },
+          "TK-101": { status: "OPEN", level_pct: 82.5, temp_c: 38.1 }
+        };
+      }
+
+      container.innerHTML = Object.entries(dcs).map(([tag, val]) => `
+        <div class="p-2 rounded-lg bg-slate-950/60 border border-slate-800 text-left font-mono">
+          <div class="text-[10px] text-slate-500 flex justify-between">
+            <span>${tag}</span>
+            <span class="${val.status === 'OPEN' ? 'text-amber-400' : 'text-emerald-400'} font-semibold">${val.status}</span>
+          </div>
+          <div class="text-[11px] text-slate-300 font-semibold mt-0.5">
+            ${val.pressure !== undefined ? val.pressure + ' bar' : val.level_pct + '%'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // LOG FILTERING TAB TOGGLE
+    function setLogFilter(filter) {
+      currentLogFilter = filter;
+      ['ALL', 'TRANSCRIBE', 'BATCH_SYNC', 'ANOMALY'].forEach(f => {
+        const btn = document.getElementById(`tab-${f}`);
+        if (!btn) return;
+        if (f === filter) {
+          btn.className = "px-3 py-1 rounded-lg text-white bg-sky-600 font-medium transition-colors";
+        } else {
+          btn.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors";
+        }
+      });
+      renderLogFeed();
+    }
+
+    // RENDER STRUCTURED LOG FEED WITH ACCORDION JSON
+    function renderLogFeed() {
+      const container = document.getElementById('logs-container');
+      if (!container) return;
+
+      let filtered = cachedLogs;
+      if (currentLogFilter !== 'ALL') {
+        filtered = cachedLogs.filter(l => l.category === currentLogFilter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-xs text-slate-500 font-mono">
+            No entries matching category filter "${currentLogFilter}".
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map((l, idx) => {
+        const isError = (l.status >= 400 || l.category === 'ANOMALY');
+        const statusBadge = isError 
+          ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30">HTTP ${l.status}</span>`
+          : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">HTTP 200</span>`;
+
+        const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : 'Recently';
+
+        return `
+          <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all">
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center space-x-2 font-mono">
+                ${statusBadge}
+                <span class="font-bold ${isError ? 'text-red-400' : 'text-sky-400'}">${l.method || 'POST'}</span>
+                <span class="text-slate-300">${l.path || l.url || '/api/transcribe'}</span>
+              </div>
+              <div class="flex items-center space-x-2 text-[10px] font-mono text-slate-500">
+                <span class="text-slate-400">${l.latency || '0.2s'}</span>
+                <span>•</span>
+                <span>${timeStr}</span>
+              </div>
+            </div>
+
+            <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span class="truncate max-w-[420px]">${l.summary || 'Request processed'}</span>
+              <button onclick="toggleAccordion('log-json-${idx}')" 
+                class="text-[10px] font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 ml-2">
+                <span>Inspect JSON</span>
+                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+              </button>
+            </div>
+
+            <!-- Sleek Accordion Dropdown -->
+            <div id="log-json-${idx}" class="hidden mt-2 pt-2 border-t border-slate-800 text-[10px] font-mono text-slate-300 bg-slate-900/90 p-2.5 rounded-lg overflow-x-auto max-h-48">
+              <pre>${JSON.stringify(l, null, 2)}</pre>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      refreshIcons();
+    }
+
+    // ACCORDION TOGGLE
+    function toggleAccordion(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('hidden');
+      }
+    }
+
+    // ----------------------------------------------------
+    // INITIAL BOOT & RECURRING STREAM POLLING
+    // ----------------------------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+      refreshIcons();
+      pollTelemetry(true);
+      // Continuous background poll every 2000ms
+      setInterval(() => pollTelemetry(false), 2000);
+    });
   </script>
 </body>
 </html>
