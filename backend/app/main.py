@@ -221,6 +221,8 @@ dashboard_telemetry_stream.appendleft({
 # ==========================================
 
 @app.get("/api/v1/health")
+@app.get("/v1/health")
+@app.get("/health")
 async def health_v1():
     """
     Lightweight health/connectivity check pinged every 5s by the Flutter mobile app
@@ -233,6 +235,7 @@ async def health_v1():
 
 
 @app.post("/api/v1/handover/batch_sync", response_model=CapsuleBatchSyncResponse)
+@app.post("/v1/handover/batch_sync", response_model=CapsuleBatchSyncResponse)
 async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
     """
     Batch synchronization endpoint for offline Gemma E4B capsules from Flutter edge devices.
@@ -602,6 +605,7 @@ def check_rate_limit(client_ip: str) -> bool:
     return True
 
 @app.post("/api/transcribe")
+@app.post("/transcribe")
 async def transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),
