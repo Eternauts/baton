@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/data/handover_repository.dart';
 import '../../../../features/report/report_view_model.dart';
 import '../../../../features/report/views/report_screen.dart';
+import '../../../../features/ask/ask_view_model.dart';
+import '../../../../features/ask/views/ask_screen.dart';
 import '../../../../features/feed/feed_view_model.dart';
 import '../../../../features/feed/views/feed_screen.dart';
 import '../../../../features/handover/handover_view_model.dart';
@@ -30,12 +32,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
   late final ReportViewModel _reportViewModel;
   late final FeedViewModel _feedViewModel;
   late final HandoverViewModel _handoverViewModel;
+  late final AskViewModel _askViewModel;
 
   @override
   void initState() {
     super.initState();
     _feedViewModel = FeedViewModel(repository: widget.repository);
     _handoverViewModel = HandoverViewModel(repository: widget.repository);
+    _askViewModel = AskViewModel(repository: widget.repository);
     _reportViewModel = ReportViewModel(
       repository: widget.repository,
       onSubmitted: () => _feedViewModel.loadFeed(isOnline: !_isOffline),
@@ -68,6 +72,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     _reportViewModel.dispose();
     _feedViewModel.dispose();
     _handoverViewModel.dispose();
+    _askViewModel.dispose();
     super.dispose();
   }
 
@@ -104,6 +109,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
               HandoverScreen(
                 viewModel: _handoverViewModel,
+                isOnline: !_isOffline,
+              ),
+              AskScreen(
+                viewModel: _askViewModel,
                 isOnline: !_isOffline,
               ),
             ],
@@ -143,6 +152,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 icon: Icon(Icons.swap_horiz_rounded),
                 activeIcon: Icon(Icons.swap_horizontal_circle_rounded),
                 label: 'Handover',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.manage_search_rounded),
+                activeIcon: Icon(Icons.manage_search_rounded),
+                label: 'Ask',
               ),
             ],
           ),
