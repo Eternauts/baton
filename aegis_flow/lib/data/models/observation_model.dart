@@ -90,7 +90,7 @@ class ObservationModel {
       tag: map['tag'] as String,
       anomaly: map['anomaly'] as String,
       severity: (map['severity'] as num?)?.toInt() ?? 3,
-      unit: map['unit'] as String? ?? 'General Plant',
+      unit: map['unit'] as String? ?? 'General Unit',
       actionRequired: map['actionRequired'] as String? ?? 'Review during handover',
       timestamp: DateTime.tryParse(map['timestamp'] as String? ?? '') ?? DateTime.now(),
       isSynced: map['isSynced'] as bool? ?? false,
@@ -105,7 +105,7 @@ class ObservationModel {
   factory ObservationModel.fromJson(String source) =>
       ObservationModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
-  /// Formatted JSON output representation matching on-device Gemma INT4 extraction
+  /// Formatted JSON output representation matching on-device Gemma extraction
   String toStructuredJsonPreview() {
     final Map<String, dynamic> structured = {
       'tag': tag,
