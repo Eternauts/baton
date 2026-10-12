@@ -4,7 +4,7 @@
 
 # Baton
 
-**Speak it. Hand it over.**
+**Speak it. Baton hands it over.**
 
 A shift-handover safety system for process plants. Operators say what they saw; deterministic rules check it against the plant; Gemini agents read, explain and brief; people accept.
 
@@ -29,7 +29,7 @@ A shift-handover safety system for process plants. Operators say what they saw; 
 - **Shot 1 (0–2s):** Offshore oil rig technician in an orange coverall, white hard hat and safety glasses on a steel walkway at golden hour, derrick and calm sea behind. They say: *"Minor oil leak near pump station three."*
 - **Shot 2 (2–4s):** Chemical plant operator in a flame-resistant suit and face shield beside glowing pipe racks at dusk. They say: *"Pressure reading high on line four."*
 - **Shot 3 (4–6s):** Miner with a headlamp and hi-vis vest in a tunnel lit by work lights. They say: *"Loose rock on the east wall."*
-- **End card (6–8s):** The screen cuts to a deep navy background. A cyan and white pipe-shaped letter "B" logo assembles itself from flowing pipe lines with a soft glow, then the word "Baton" fades in beside it, followed by the tagline *"Speak it. Hand it over."* in clean white sans-serif type. The amber glow of the microphone button fades into a subtle light behind the logo. Smooth, minimal, premium motion graphics.
+- **End card (6–8s):** The screen cuts to a deep navy background. A cyan and white pipe-shaped letter "B" logo assembles itself from flowing pipe lines with a soft glow, then the word "Baton" fades in beside it, followed by the tagline *"Speak it. Baton hands it over."* in clean white sans-serif type. The amber glow of the microphone button fades into a subtle light behind the logo. Smooth, minimal, premium motion graphics.
 
 ---
 
@@ -90,7 +90,8 @@ Deeper detail (agents, tools, guardrails, data model, evaluation): [backend/AGEN
 | **Vector knowledge store** | Firestore vector search (768-d, cosine) over SOPs, bulletins and earlier handovers |
 | **Guardrails** | Verdict lock, no false all-clear, citations must exist, advisory items capped at WARNING; all logged in the trace |
 | **Interview handover** | One question per distinct open conflict, a cited brief, a supervisor read-back for every CRITICAL item, a gated transfer |
-| **Ask the logs** | Natural-language questions answered only from retrieved evidence, in the question's language (English, Tamil, Malay verified) |
+| **Ask (query mode)** | A worker with a doubt, or working under a permit, asks the plant's documents a question by voice or text. Matching documents appear in about 0.8 s, then a cited answer with ordered steps and stop-work cautions in about 3 to 4 s. Pick a permit and the answer is about that job; an expired permit is a red stop notice. Open safety conflicts always sit beside the answer, and tapping a source opens the exact wording |
+| **Ask the logs** (supervisor) | The deeper multi-step agent behind the Control Room: questions answered only from retrieved evidence, in the question's language (English, Tamil, Malay verified) |
 | **Control Room** | Overview, living architecture, telemetry, audit trail, agent trace, debug console |
 | **Idempotent sync** | The same capsules always map to the same handover, so a retry never creates a second event or agent run |
 | **Two-key security** | The supervisor key is for dashboard actions; a separate demo key ships inside the public app and opens the app endpoints only |
@@ -106,7 +107,12 @@ Deeper detail (agents, tools, guardrails, data model, evaluation): [backend/AGEN
 | Ask latency | median 6.4 s, p90 11.5 s |
 | Pipeline latency | median 11.9 s (single runs) |
 | Load: 20 syncs in a minute | 20 / 20 succeeded, 0 duplicates, 0 lost |
-| Tests | 175 backend, 17 app |
+| Query mode (live documents) | documents in about 0.8 s, cited answer in about 3.7 s |
+| Tests | 190 backend, 23 app |
+
+## How Baton compares
+
+We surveyed digital shift logbooks, permit-to-work suites, industrial AI copilots, voice-first logs and the accident literature. The established products record and route information well and the new copilots answer questions well; in the material we reviewed, none combines rule-based checking of the outgoing shift's claims against the plant, a recorded supervisor read-back before transfer, and permit-aware document answers with the open conflicts always on screen. Baton's unique selling points, the comparison table and the limits of this survey are in [docs/LITERATURE_SURVEY.md](docs/LITERATURE_SURVEY.md).
 
 ## Repository layout
 
@@ -119,7 +125,7 @@ aegis_flow/     The Flutter app: one codebase for Android and the web
   web_hosting/    Dockerfile + nginx config for the website service
   scripts/        deploy_web.sh
 sandglass/      Separate document-grounded answer service for constrained links
-docs/media/     Teaser video and poster
+docs/            LITERATURE_SURVEY.md, media/ (teaser video and poster)
 ```
 
 ## Run it locally
@@ -131,7 +137,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env            # then fill in your project and models
 uvicorn app.main:app --reload --port 8080
-pytest -q                       # 175 tests, no network
+pytest -q                       # 190 tests, no network
 ```
 
 **App** (Flutter)
