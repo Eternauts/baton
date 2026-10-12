@@ -18,7 +18,7 @@ A shift-handover safety system for process plants. Operators say what they saw; 
 
 ## Watch the 10-second teaser
 
-<video src="https://github.com/Eternauts/baton/raw/Baton-Cloud/docs/media/baton-teaser.mp4" poster="docs/media/baton-teaser-poster.jpg" controls muted width="100%"></video>
+<video src="https://github.com/Eternauts/baton/raw/main/docs/media/baton-teaser.mp4" poster="docs/media/baton-teaser-poster.jpg" controls muted width="100%"></video>
 
 [![Baton teaser](docs/media/baton-teaser-poster.jpg)](docs/media/baton-teaser.mp4)
 
