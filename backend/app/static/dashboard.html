@@ -1,1177 +1,1278 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baton // Google Cloud Living Architecture & Telemetry Hub</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baton Control Room</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231A73E8'/%3E%3Cpath d='M9 23L23 9' stroke='white' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='10.5' cy='21.5' r='2.6' fill='white'/%3E%3Ccircle cx='21.5' cy='10.5' r='2.6' fill='white'/%3E%3C/svg%3E">
+  <meta name="description" content="Baton shift-handover safety: operations overview, living architecture, telemetry, audit trail and agent traces.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gblue: {
-              400: '#38bdf8',
-              500: '#0284c7',
-              600: '#0369a1',
-            },
-            amber: {
-              400: '#fbbf24',
-              500: '#f59e0b',
-              600: '#d97706',
-            },
-            danger: {
-              400: '#f87171',
-              500: '#ef4444',
-              600: '#dc2626',
-            },
-            nominal: {
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* Blueprint dot grid canvas */
-    body.dark {
-      background-color: #0b0f19;
-      background-image: radial-gradient(#1e293b 1.2px, transparent 1.2px);
-      background-size: 24px 24px;
-      color: #f1f5f9;
+    /* ============================================================
+       DESIGN TOKENS (the only place colors, radii and shadows are defined)
+       ============================================================ */
+    :root {
+      --bg: #FFFFFF;           --bg-2: #F8F9FA;        --bg-3: #F1F3F4;
+      --text: #202124;         --text-2: #5F6368;      --text-3: #80868B;
+      --border: #DADCE0;       --border-2: #E8EAED;
+      --blue: #1A73E8;         --blue-hover: #1765CC;  --blue-soft: #E8F0FE;   --blue-text: #174EA6;
+      --green: #188038;        --green-soft: #E6F4EA;  --green-text: #0D652D;
+      --amber: #F9AB00;        --amber-soft: #FEF7E0;  --amber-text: #8A4B00;
+      --red: #D93025;          --red-soft: #FCE8E6;    --red-text: #A50E0E;
+      --violet: #7E3FBF;       --violet-soft: #F3E8FD; --violet-text: #5B2A94;
+      --wire: #BDC1C6;
+      --radius: 8px;           --radius-sm: 6px;       --radius-pill: 999px;
+      --shadow-1: 0 1px 2px rgba(60,64,67,.12), 0 1px 3px rgba(60,64,67,.08);
+      --shadow-2: 0 2px 6px rgba(60,64,67,.16), 0 1px 2px rgba(60,64,67,.12);
+      --shadow-drawer: -8px 0 24px rgba(60,64,67,.16);
+      --sans: "Inter", "Google Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
+      --header-h: 60px;
+      color-scheme: light;
     }
-    body.light {
-      background-color: #f8fafc;
-      background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
-      background-size: 24px 24px;
-      color: #0f172a;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg-2); color: var(--text); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4, p { margin: 0; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    a { color: var(--blue); }
+    pre { margin: 0; }
+    .mono { font-family: var(--mono); }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .skip { position: absolute; left: -9999px; top: 8px; background: var(--blue); color: #fff; padding: 8px 12px; border-radius: var(--radius-sm); z-index: 100; }
+    .skip:focus { left: 8px; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+    .i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .i--lg { width: 20px; height: 20px; } .i--sm { width: 14px; height: 14px; }
+    [hidden] { display: none !important; }
 
-    /* Minimalist Scrollbars */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    /* ============================================================ SHELL */
+    .header { position: sticky; top: 0; z-index: 40; height: var(--header-h); background: var(--bg); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-5); }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); flex: none; }
+    .brand__mark { width: 32px; height: 32px; border-radius: 8px; background: var(--blue); display: grid; place-items: center; }
+    .brand__name { font-weight: 600; font-size: 16px; letter-spacing: -.01em; line-height: 1.1; }
+    .brand__sub { font-size: 11px; color: var(--text-2); display: block; font-weight: 500; }
+    .context { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-4); border-left: 1px solid var(--border-2); min-width: 0; }
+    .context__plant { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .context__env { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav { display: flex; gap: 2px; margin-left: var(--space-4); height: 100%; align-items: stretch; }
+    .nav a { display: flex; align-items: center; gap: 6px; padding: 0 12px; color: var(--text-2); text-decoration: none; font-weight: 500; font-size: 13px; border-bottom: 2px solid transparent; margin-top: 2px; }
+    .nav a:hover { color: var(--text); background: var(--bg-2); }
+    .nav a[aria-current="page"] { color: var(--blue); border-bottom-color: var(--blue); }
+    .header__right { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+    .conn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius-pill); white-space: nowrap; }
+    .conn--ok { color: var(--green-text); background: var(--green-soft); border-color: transparent; }
+    .conn--bad { color: var(--red-text); background: var(--red-soft); border-color: transparent; }
+    .iconbtn { width: 36px; height: 36px; display: grid; place-items: center; background: transparent; border: 1px solid transparent; border-radius: var(--radius-pill); color: var(--text-2); }
+    .iconbtn:hover { background: var(--bg-3); color: var(--text); }
+    .menu-wrap { position: relative; }
+    .menu { position: absolute; right: 0; top: 42px; min-width: 270px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-2); padding: 6px; z-index: 50; }
+    .menu button, .menu a { display: flex; width: 100%; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; background: none; border: 0; border-radius: var(--radius-sm); color: var(--text); font-size: 13px; text-decoration: none; }
+    .menu button:hover, .menu a:hover { background: var(--bg-3); }
+    .menu button[disabled] { color: var(--text-3); cursor: not-allowed; }
+    .menu small { display: block; color: var(--text-2); font-size: 11px; }
+    .menu hr { border: 0; border-top: 1px solid var(--border-2); margin: 6px 0; }
+    .nav-toggle { display: none; }
+    .main { max-width: 1280px; margin: 0 auto; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
+    .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+    .page-head h1 { font-size: 24px; font-weight: 600; letter-spacing: -.015em; line-height: 1.25; }
+    .page-head p { color: var(--text-2); font-size: 13px; margin-top: 2px; }
+    .stack { display: flex; flex-direction: column; gap: var(--space-5); }
+    .grid { display: grid; gap: var(--space-4); }
+    .grid--kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid--2 { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+    .grid--agents { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: start; }
+    .grid--sensors { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 
-    /* SVG Animated Wire Connectors */
-    .flow-wire {
-      stroke-dasharray: 6 8;
-      animation: dashMove 1.4s linear infinite;
-    }
-    @keyframes dashMove {
-      from { stroke-dashoffset: 28; }
-      to { stroke-dashoffset: 0; }
-    }
+    /* ============================================================ COMPONENTS */
+    .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-1); }
+    .card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 14px 16px; border-bottom: 1px solid var(--border-2); }
+    .card__title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .card__sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+    .card__body { padding: 16px; }
+    .label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); }
+    .muted { color: var(--text-2); } .small { font-size: 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-pill); font-weight: 500; font-size: 13px; border: 1px solid var(--border); background: var(--bg); color: var(--blue); transition: background .15s, box-shadow .15s; white-space: nowrap; }
+    .btn:hover { background: var(--blue-soft); }
+    .btn--primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn--primary:hover { background: var(--blue-hover); }
+    .btn--danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn--danger:hover { background: #B3261E; }
+    .btn--ghost { border-color: transparent; color: var(--text-2); }
+    .btn--ghost:hover { background: var(--bg-3); color: var(--text); }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap; background: var(--bg-3); color: var(--text-2); }
+    .chip--critical { background: var(--red-soft); color: var(--red-text); }
+    .chip--warn { background: var(--amber-soft); color: var(--amber-text); }
+    .chip--ok { background: var(--green-soft); color: var(--green-text); }
+    .chip--info { background: var(--blue-soft); color: var(--blue-text); }
+    .chip--ai { background: var(--violet-soft); color: var(--violet-text); }
+    .chip--mono { font-family: var(--mono); font-weight: 500; }
+    button.chip { border: 0; cursor: pointer; font-family: inherit; }
+    .chip--wrap { white-space: normal; text-align: left; max-width: 100%; align-items: flex-start; }
+    .field--select { width: auto; max-width: min(300px, 100%); min-width: 0; }
+    button.chip:hover { filter: brightness(.96); }
+    .field { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font: inherit; font-size: 13px; }
+    .field:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
+    textarea.field { resize: vertical; }
+    .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tab { padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; color: var(--text-2); }
+    .tab:hover { background: var(--bg-3); }
+    .tab[aria-selected="true"], .tab[aria-pressed="true"] { background: var(--blue-soft); border-color: transparent; color: var(--blue-text); }
+    .skeleton { background: linear-gradient(90deg, var(--bg-3) 25%, var(--border-2) 37%, var(--bg-3) 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 4px; color: transparent !important; user-select: none; }
+    @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .empty { padding: 28px 16px; text-align: center; color: var(--text-2); font-size: 13px; }
+    .notice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-2); border: 1px solid var(--border-2); font-size: 12px; color: var(--text-2); }
+    .notice--warn { background: var(--amber-soft); border-color: transparent; color: var(--amber-text); }
+    .notice--bad { background: var(--red-soft); border-color: transparent; color: var(--red-text); }
 
-    /* Pulse radar dots */
-    @keyframes radarPulse {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.35); opacity: 0.2; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-    .radar-pulse { animation: radarPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    /* incident banner */
+    .banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); }
+    .banner__icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+    .banner__main { flex: 1 1 360px; min-width: 0; }
+    .banner__title { font-weight: 600; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .banner__meta { font-size: 12px; color: var(--text-2); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .banner--critical { background: var(--red-soft); border-color: #F6C6C2; } .banner--critical .banner__icon { background: #fff; color: var(--red); }
+    .banner--warn { background: var(--amber-soft); border-color: #F3DDA0; } .banner--warn .banner__icon { background: #fff; color: var(--amber-text); }
+    .banner--ok { background: var(--green-soft); border-color: #CEEAD6; } .banner--ok .banner__icon { background: #fff; color: var(--green); }
 
-    /* Node highlight glow keyframes */
-    @keyframes glowRed {
-      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); }
-      50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.85); border-color: rgba(239, 68, 68, 1); }
-    }
-    @keyframes glowGreen {
-      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.25); border-color: rgba(16, 185, 129, 0.5); }
-      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.85); border-color: rgba(16, 185, 129, 1); }
-    }
-    @keyframes glowBlue {
-      0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); border-color: rgba(56, 189, 248, 0.5); }
-      50% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.85); border-color: rgba(56, 189, 248, 1); }
-    }
-    @keyframes glowAmber {
-      0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); border-color: rgba(245, 158, 11, 0.5); }
-      50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.85); border-color: rgba(245, 158, 11, 1); }
-    }
-    .node-pulse-red { animation: glowRed 1.2s ease-in-out infinite; }
-    .node-pulse-green { animation: glowGreen 1.2s ease-in-out infinite; }
-    .node-pulse-blue { animation: glowBlue 1.2s ease-in-out infinite; }
-    .node-pulse-amber { animation: glowAmber 1.2s ease-in-out infinite; }
+    /* KPI */
+    .kpi { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 132px; transition: box-shadow .15s, border-color .15s; }
+    .kpi:hover { box-shadow: var(--shadow-2); }
+    .kpi__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .kpi__icon { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); }
+    .kpi__icon--critical { background: var(--red-soft); color: var(--red); } .kpi__icon--warn { background: var(--amber-soft); color: var(--amber-text); } .kpi__icon--ok { background: var(--green-soft); color: var(--green); }
+    .kpi__value { font-size: 26px; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+    .kpi__value .mono { font-size: 24px; }
+    .kpi__label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+    .kpi__foot { font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+    .spark { width: 84px; height: 24px; flex: none; }
+    .spark polyline { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 
-    /* Traveling packet */
-    .traveling-packet {
-      filter: drop-shadow(0 0 6px currentColor);
-      transition: all 0.05s linear;
-    }
+    /* AI panel */
+    .ai { border-left: 3px solid var(--violet); padding-left: 14px; }
+    .ai__headline { font-size: 15px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ai--open .ai__headline { display: block; }
+    .find { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border-2); font-size: 13px; }
+    .find:first-child { border-top: 0; }
 
-    /* Screen Tab Transition */
-    .screen-view {
-      transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    /* sensors */
+    .sensor { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .sensor--critical { border-color: #F0B4AF; box-shadow: inset 3px 0 0 var(--red); }
+    .sensor--warn { border-color: #EBD08B; box-shadow: inset 3px 0 0 var(--amber); }
+    .sensor__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .sensor__id { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+    .sensor__value { font-family: var(--mono); font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+    .sensor__unit { font-size: 13px; color: var(--text-2); font-weight: 500; margin-left: 4px; }
+    .sensor__meta { font-size: 11px; color: var(--text-2); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+
+    /* tables */
+    .tablewrap { overflow-x: auto; }
+    table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); padding: 10px 14px; background: var(--bg-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .table td { padding: 10px 14px; border-bottom: 1px solid var(--border-2); vertical-align: top; }
+    .table tr.row:hover td { background: var(--bg-2); }
+    .table .detail td { background: var(--bg-2); padding: 12px 14px; }
+    .table .rowbtn { background: none; border: 0; padding: 0; color: inherit; text-align: left; display: inline-flex; gap: 6px; align-items: center; }
+    .jsonbox { font-family: var(--mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    .cell-ellipsis { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ============================================================ TOPOLOGY */
+    .arch { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+    .topo { position: relative; padding: 20px; }
+    .topo__stage { position: relative; }
+    .topo__svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .topo__grid { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); gap: 40px 44px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--text-2); margin-bottom: 14px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid var(--wire); border-radius: 2px; }
+    .legend i.active { border-color: var(--blue); } .legend i.healthy { border-color: var(--green); } .legend i.degraded { border-color: var(--amber); } .legend i.blocked { border-color: var(--red); }
+    .node { text-align: left; display: flex; flex-direction: column; gap: 8px; width: 100%; min-height: 128px; align-self: center; overflow-wrap: anywhere; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-1); transition: border-color .15s, box-shadow .15s, background .15s; }
+    .node:hover { box-shadow: var(--shadow-2); border-color: #AECBFA; }
+    .node[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 1px var(--blue); }
+    .node__head { display: flex; align-items: center; gap: 10px; }
+    .node__icon { width: 30px; height: 30px; border-radius: 8px; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; flex: none; }
+    .node[aria-pressed="true"] .node__icon { background: #fff; }
+    .node__name { font-weight: 600; font-size: 13px; line-height: 1.25; min-width: 0; }
+    .node__role { font-size: 11px; color: var(--text-2); display: block; font-weight: 400; }
+    .node__metrics { font-family: var(--mono); font-size: 11px; color: var(--text-2); display: flex; flex-direction: column; gap: 1px; }
+    .node__metrics b { color: var(--text); font-weight: 500; }
+    .node--flash { animation: nodeFlash .9s ease-out 1; }
+    @keyframes nodeFlash { 0% { box-shadow: 0 0 0 0 rgba(26,115,232,.5); } 100% { box-shadow: 0 0 0 10px rgba(26,115,232,0); } }
+    .node--flash-critical { animation-name: nodeFlashRed; }
+    @keyframes nodeFlashRed { 0% { box-shadow: 0 0 0 0 rgba(217,48,37,.5); } 100% { box-shadow: 0 0 0 10px rgba(217,48,37,0); } }
+    .wire { fill: none; stroke: var(--wire); stroke-width: 1.75; stroke-linecap: round; transition: stroke .25s, stroke-width .25s; }
+    .wire--active { stroke: var(--blue); stroke-width: 3; } .wire--healthy { stroke: var(--green); } .wire--degraded { stroke: var(--amber); } .wire--blocked { stroke: var(--red); }
+    .wire--active.wire { stroke: var(--blue); }
+    .packet { fill: var(--blue); }
+    .dots { display: inline-flex; gap: 3px; }
+    .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); border: 1px solid transparent; }
+    .dots i.run { background: var(--amber); } .dots i.done { background: var(--green); } .dots i.fb { background: var(--red); }
+    .inspector { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); scroll-margin-top: calc(var(--header-h) + 12px); }
+    .inspector .sect:first-child { border-right: 1px solid var(--border-2); border-top: 0; }
+    .inspector .sect { border-top: 0; }
+    .inspector .sect--solo { grid-column: 1 / -1; }
+    .inspector dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 12px; }
+    .inspector dt { color: var(--text-2); } .inspector dd { margin: 0; font-family: var(--mono); word-break: break-word; text-align: right; }
+    .inspector .sect { padding: 16px 18px; }
+
+    /* ============================================================ TRACE */
+    .trace-row { border: 1px solid var(--border-2); border-radius: var(--radius); padding: 10px 12px; background: var(--bg); }
+    .trace-bar { height: 6px; background: var(--bg-3); border-radius: 3px; position: relative; overflow: hidden; margin-top: 8px; }
+    .trace-bar span { position: absolute; top: 0; bottom: 0; background: var(--blue); border-radius: 3px; min-width: 3px; }
+    .trace-items { margin: 8px 0 0; padding-left: 12px; border-left: 2px solid var(--border-2); display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+    .trace-guard { border: 1px solid #F0B4AF; background: var(--red-soft); color: var(--red-text); border-radius: var(--radius-sm); padding: 6px 8px; font-size: 12px; display: flex; gap: 6px; align-items: flex-start; }
+
+    /* ============================================================ DRAWER, MODAL, TOAST */
+    .scrim { position: fixed; inset: 0; background: rgba(32,33,36,.4); z-index: 60; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw); background: var(--bg); z-index: 61; box-shadow: var(--shadow-drawer); display: flex; flex-direction: column; animation: slideIn .18s ease-out; }
+    @keyframes slideIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .drawer__head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .drawer__body { padding: 0; overflow: auto; flex: 1; }
+    .drawer__sect { padding: 16px 20px; border-bottom: 1px solid var(--border-2); }
+    .drawer__foot { padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg-2); display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(32,33,36,.4); }
+    .modal__box { width: min(560px, 100%); max-height: 84vh; overflow: auto; background: var(--bg); border-radius: 12px; box-shadow: var(--shadow-2); padding: 20px; }
+    .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 80; display: flex; flex-direction: column; gap: 8px; max-width: min(380px, calc(100vw - 32px)); }
+    .toast { display: flex; gap: 10px; align-items: flex-start; background: #323232; color: #fff; padding: 12px 14px; border-radius: var(--radius-sm); box-shadow: var(--shadow-2); font-size: 13px; animation: slideUp .2s ease-out; }
+    .toast--ok .i { color: #81C995; } .toast--bad .i { color: #F28B82; }
+    @keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ============================================================ RESPONSIVE */
+    @media (max-width: 1180px) {
+      .grid--kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid--2, .grid--agents { grid-template-columns: minmax(0, 1fr); }
+      .context { display: none; }
+      .topo__grid { gap: 32px 24px; }
+    }
+    @media (max-width: 760px) { .inspector { grid-template-columns: minmax(0, 1fr); } .inspector .sect:first-child { border-right: 0; border-bottom: 1px solid var(--border-2); } }
+    @media (max-width: 900px) {
+      .header { padding: 0 var(--space-3); gap: var(--space-2); }
+      .nav-toggle { display: grid; }
+      .nav { display: none; position: absolute; top: var(--header-h); left: 0; right: 0; flex-direction: column; background: var(--bg); border-bottom: 1px solid var(--border); padding: 6px; margin: 0; height: auto; box-shadow: var(--shadow-2); }
+      .nav.nav--open { display: flex; }
+      .nav a { padding: 12px; border-bottom: 0; border-radius: var(--radius-sm); margin: 0; }
+      .nav a[aria-current="page"] { background: var(--blue-soft); }
+      .conn .conn__text { display: none; }
+      .main { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
+      .topo { padding: 12px; }
+      .topo__svg { display: none; }
+      .topo__grid { display: flex; flex-direction: column; gap: 10px; }
+      .topo__grid > * { grid-area: auto !important; }
+      .topo__keycard { display: none; }
+    }
+    @media (max-width: 520px) {
+      .grid--kpi { grid-template-columns: minmax(0, 1fr); }
+      .page-head h1 { font-size: 20px; }
+      .brand__sub { display: none; }
+      .banner { padding: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
     }
   </style>
 </head>
-<body class="dark min-h-screen flex flex-col justify-between selection:bg-sky-500/30 selection:text-sky-300 font-sans transition-colors duration-200">
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+<!-- Icons: lucide-static v1.55.0 (ISC license), https://lucide.dev -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" /></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="m12 5 7 7-7 7" /></symbol>
+<symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" /> <path d="m7 16.5-4.74-2.85" /> <path d="m7 16.5 5-3" /> <path d="M7 16.5v5.17" /> <path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" /> <path d="m17 16.5-5-3" /> <path d="m17 16.5 4.74-2.85" /> <path d="M17 16.5v5.17" /> <path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" /> <path d="M12 8 7.26 5.15" /> <path d="m12 8 4.74-2.85" /> <path d="M12 13.5V8" /></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+<symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+<symbol id="i-circle-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <line x1="12" x2="12" y1="8" y2="12" /> <line x1="12" x2="12.01" y1="16" y2="16" /></symbol>
+<symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m16 9-5.5 5.5L8 12" /></symbol>
+<symbol id="i-clipboard-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /> <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /> <path d="M12 11h4" /> <path d="M12 16h4" /> <path d="M8 11h.01" /> <path d="M8 16h.01" /></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 6v6l4 2" /></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /> <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol>
+<symbol id="i-cpu" viewBox="0 0 24 24"><path d="M12 20v2" /> <path d="M12 2v2" /> <path d="M17 20v2" /> <path d="M17 2v2" /> <path d="M2 12h2" /> <path d="M2 17h2" /> <path d="M2 7h2" /> <path d="M20 12h2" /> <path d="M20 17h2" /> <path d="M20 7h2" /> <path d="M7 20v2" /> <path d="M7 2v2" /> <rect x="4" y="4" width="16" height="16" rx="2" /> <rect x="8" y="8" width="8" height="8" rx="1" /></symbol>
+<symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" /> <path d="M3 5V19A9 3 0 0 0 21 19V5" /> <path d="M3 12A9 3 0 0 0 21 12" /></symbol>
+<symbol id="i-ellipsis-vertical" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /> <circle cx="12" cy="5" r="1" /> <circle cx="12" cy="19" r="1" /></symbol>
+<symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6" /> <path d="M10 14 21 3" /> <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol>
+<symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /> <path d="M10 9H8" /> <path d="M16 13H8" /> <path d="M16 17H8" /></symbol>
+<symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M12 7v5l4 2" /></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></symbol>
+<symbol id="i-key-round" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" /> <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" /></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /> <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /> <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /></symbol>
+<symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" /> <rect width="7" height="5" x="14" y="3" rx="1" /> <rect width="7" height="9" x="14" y="12" rx="1" /> <rect width="7" height="5" x="3" y="16" rx="1" /></symbol>
+<symbol id="i-lock-open" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 9.9-1" /></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16" /> <path d="M4 12h16" /> <path d="M4 19h16" /></symbol>
+<symbol id="i-message-square-text" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /> <path d="M7 11h10" /> <path d="M7 15h6" /> <path d="M7 7h8" /></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+<symbol id="i-network" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1" /> <rect x="2" y="16" width="6" height="6" rx="1" /> <rect x="9" y="2" width="6" height="6" rx="1" /> <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /> <path d="M12 12V8" /></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24"><path d="M16.247 7.761a6 6 0 0 1 0 8.478" /> <path d="M19.075 4.933a10 10 0 0 1 0 14.134" /> <path d="M4.925 19.067a10 10 0 0 1 0-14.134" /> <path d="M7.753 16.239a6 6 0 0 1 0-8.478" /> <circle cx="12" cy="12" r="2" /></symbol>
+<symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /> <path d="M21 3v5h-5" /> <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /> <path d="M8 16H3v5" /></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" /> <path d="m21.854 2.147-10.94 10.939" /></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /></symbol>
+<symbol id="i-shield-alert" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path d="M12 8v4" /> <path d="M12 16h.01" /></symbol>
+<symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path d="m9 12 2 2 4-4" /></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></symbol>
+<symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol>
+<symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /></symbol>
+<symbol id="i-table-2" viewBox="0 0 24 24"><path d="M3 9h18" /> <path d="M9 3v18" /> <rect x="3" y="3" width="18" height="18" rx="2" /></symbol>
+<symbol id="i-terminal" viewBox="0 0 24 24"><path d="M12 19h8" /> <path d="m4 17 6-6-6-6" /></symbol>
+<symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol>
+<symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01" /> <path d="M8.5 16.429a5 5 0 0 1 7 0" /> <path d="M5 12.859a10 10 0 0 1 5.17-2.69" /> <path d="M19 12.859a10 10 0 0 0-2.007-1.523" /> <path d="M2 8.82a15 15 0 0 1 4.177-2.643" /> <path d="M22 8.82a15 15 0 0 0-11.288-3.764" /> <path d="m2 2 20 20" /></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 20h.01" /> <path d="M2 8.82a15 15 0 0 1 20 0" /> <path d="M5 12.859a10 10 0 0 1 14 0" /> <path d="M8.5 16.429a5 5 0 0 1 7 0" /></symbol>
+<symbol id="i-workflow" viewBox="0 0 24 24"><rect width="8" height="8" x="3" y="3" rx="2" /> <path d="M7 11v4a2 2 0 0 0 2 2h4" /> <rect width="8" height="8" x="13" y="13" rx="2" /></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></symbol>
+</defs></svg>
 
-  <!-- TOP HEADER & DUAL-SCREEN NAVIGATION -->
-  <header class="sticky top-0 z-50 bg-slate-950/80 dark:bg-slate-950/85 backdrop-blur-md border-b border-slate-800 px-6 py-3 transition-colors duration-200">
-    <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">
-      
-      <!-- Brand & Project Info -->
-      <div class="flex items-center space-x-3.5">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-amber-400 p-[1.5px] shadow-lg shadow-sky-500/20">
-          <div class="w-full h-full bg-slate-950 dark:bg-slate-950 rounded-[10px] flex items-center justify-center">
-            <!-- Google Cloud Emblem -->
-            <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
-            </svg>
-          </div>
+  <!-- ===================== APPLICATION SHELL ===================== -->
+  <header class="header">
+    <button class="iconbtn nav-toggle" id="nav-toggle" title="Menu" aria-label="Open navigation" aria-expanded="false" aria-controls="nav"><svg class="i i--lg"><use href="#i-menu"/></svg></button>
+    <a class="brand" href="#/overview" aria-label="Baton Control Room, overview">
+      <span class="brand__mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M5.5 18.5L18.5 5.5" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="2.2" fill="#fff"/><circle cx="17.5" cy="6.5" r="2.2" fill="#fff"/></svg></span>
+      <span class="brand__name">Baton<span class="brand__sub">Control Room</span></span>
+    </a>
+    <div class="context" aria-label="Plant and environment">
+      <span class="context__plant" id="ctx-plant">Plant: …</span>
+      <span class="context__env" id="ctx-env">Environment: …</span>
+    </div>
+    <nav class="nav" id="nav" aria-label="Primary">
+      <a href="#/overview" data-route="overview"><svg class="i"><use href="#i-layout-dashboard"/></svg>Overview</a>
+      <a href="#/architecture" data-route="architecture"><svg class="i"><use href="#i-network"/></svg>Living Architecture</a>
+      <a href="#/telemetry" data-route="telemetry"><svg class="i"><use href="#i-gauge"/></svg>Telemetry</a>
+      <a href="#/audit" data-route="audit"><svg class="i"><use href="#i-history"/></svg>Audit Trail</a>
+      <a href="#/agents" data-route="agents"><svg class="i"><use href="#i-workflow"/></svg>Agent Trace</a>
+    </nav>
+    <div class="header__right">
+      <span class="conn" id="conn" role="status" aria-live="polite"><svg class="i i--sm"><use href="#i-wifi"/></svg><span class="conn__text" id="conn-text">Connecting…</span></span>
+      <div class="menu-wrap">
+        <button class="iconbtn" id="menu-btn" title="Actions" aria-label="Actions" aria-haspopup="menu" aria-expanded="false" aria-controls="menu"><svg class="i i--lg"><use href="#i-ellipsis-vertical"/></svg></button>
+        <div class="menu" id="menu" role="menu" hidden>
+          <button role="menuitem" data-action="demo-nominal"><svg class="i"><use href="#i-send"/></svg><span>Send demo handover<small>Creates a real record and agent run</small></span></button>
+          <button role="menuitem" data-action="demo-conflict"><svg class="i"><use href="#i-triangle-alert"/></svg><span>Send demo conflict (R1)<small>Creates a real record and agent run</small></span></button>
+          <button role="menuitem" data-action="refresh"><svg class="i"><use href="#i-refresh-cw"/></svg><span>Refresh now</span></button>
+          <hr>
+          <a role="menuitem" href="#/debug"><svg class="i"><use href="#i-terminal"/></svg><span>Debug Console</span></a>
+          <button role="menuitem" data-action="key"><svg class="i"><use href="#i-key-round"/></svg><span>Supervisor key<small id="key-state">Locked</small></span></button>
         </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-              Baton <span class="text-slate-500 font-normal">/</span> Control Room
-            </h1>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30">
-              TEAM ETERNAUTS
-            </span>
-          </div>
-          <p class="text-xs text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
-            <span>Google Cloud Run</span>
-            <span class="text-slate-600">•</span>
-            <span>asia-southeast1</span>
-            <span class="text-slate-600">•</span>
-            <span class="text-emerald-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Telemetry
-            </span>
-          </p>
-        </div>
       </div>
-
-      <!-- DUAL-SCREEN TAB SWITCHER (Zero Reload) -->
-      <div class="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-inner text-xs font-medium">
-        <button id="nav-btn-architecture" onclick="switchScreen('architecture')"
-          class="flex items-center space-x-2 px-4 py-1.5 rounded-lg text-white bg-sky-600 font-semibold shadow-md shadow-sky-950/50 transition-all">
-          <i data-lucide="network" class="w-4 h-4"></i>
-          <span>Living Architecture</span>
-        </button>
-        <button id="nav-btn-debug" onclick="switchScreen('debug')"
-          class="flex items-center space-x-2 px-4 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all">
-          <i data-lucide="terminal" class="w-4 h-4"></i>
-          <span>Debug Console</span>
-        </button>
-      </div>
-
-      <!-- SIMULATION CONTROLS & UTILITY BAR -->
-      <div class="flex items-center space-x-2.5">
-        <!-- Simulation Buttons -->
-        <button id="btn-sim-nominal" onclick="triggerSimulation('NOMINAL')"
-          class="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-600/50 shadow transition-all active:scale-95">
-          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span>Trigger Sync (Nominal)</span>
-        </button>
-
-        <button id="btn-sim-conflict" onclick="triggerSimulation('CONFLICT')"
-          class="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-950/50 hover:bg-red-900/70 text-red-300 border border-red-600/50 shadow transition-all active:scale-95">
-          <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-400"></i>
-          <span>Simulate Conflict (R1)</span>
-        </button>
-
-        <!-- Light / Dark Mode Toggle -->
-        <button onclick="toggleTheme()" id="theme-toggle-btn" title="Toggle Light/Dark Theme"
-          class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 transition-colors">
-          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
-          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
-        </button>
-
-        <!-- Refresh Button -->
-        <button onclick="pollTelemetry(true)" title="Force Refresh"
-          class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors">
-          <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-refresh"></i>
-        </button>
-      </div>
-
     </div>
   </header>
 
-  <!-- MAIN VIEWPORT CONTAINER -->
-  <main class="max-w-[1720px] mx-auto w-full px-6 py-6 flex-1 flex flex-col gap-6">
+  <main class="main" id="main" tabindex="-1">
 
-    <!-- =============================================================== -->
-    <!-- SCREEN 1: "LIVING ARCHITECTURE" (THE EXECUTIVE / PITCH VIEW)   -->
-    <!-- =============================================================== -->
-    <div id="screen-architecture" class="screen-view flex flex-col gap-6">
-      
-      <!-- DISMISSIBLE SAFETY GATE ALERT CARD (FLOATING BANNER) -->
-      <div id="dismissible-alert-banner" class="rounded-2xl bg-red-950/40 border border-red-500/50 p-4 shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-4 transition-all duration-300">
-        <div class="flex items-center space-x-3.5">
-          <div class="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
-            <i data-lucide="shield-alert" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/30 text-red-200 uppercase">
-                RULE R1 VIOLATION
-              </span>
-              <h3 class="text-sm font-bold text-red-200 tracking-wide" id="alert-banner-title">
-                CRITICAL: Isolation Mismatch on P-201B
-              </h3>
-            </div>
-            <p class="text-xs text-slate-300 mt-1 font-mono leading-relaxed" id="alert-banner-desc">
-              Log asserts pump <strong class="text-red-400">P-201B</strong> as <strong class="text-sky-300">ISOLATED</strong>, but live SCADA telemetry shows valve physically <strong class="text-amber-400">OPEN</strong> at 12.4 bar pressure.
-            </p>
-          </div>
-        </div>
+    <!-- ===================== OVERVIEW ===================== -->
+    <section id="screen-overview" class="stack" aria-labelledby="h-overview" hidden>
+      <div class="page-head">
+        <div><h1 id="h-overview">Operations Overview</h1><p id="ov-sub">Loading…</p></div>
+      </div>
+      <div id="incident-banner" aria-live="polite"></div>
+      <div class="grid grid--kpi" id="kpis" aria-label="Key indicators"></div>
+      <div class="grid grid--2">
+        <article class="card" id="ai-card" aria-labelledby="ai-title"></article>
+        <article class="card" aria-labelledby="ov-tel-title">
+          <div class="card__head"><div><h2 class="card__title" id="ov-tel-title"><svg class="i"><use href="#i-gauge"/></svg>Plant feed</h2><p class="card__sub">Simulated readings used by the safety rules</p></div>
+            <a class="btn btn--ghost" href="#/telemetry">All sensors</a></div>
+          <div class="card__body" id="ov-sensors"></div>
+        </article>
+      </div>
+      <article class="card" aria-labelledby="ov-events-title">
+        <div class="card__head"><div><h2 class="card__title" id="ov-events-title"><svg class="i"><use href="#i-history"/></svg>Recent events</h2><p class="card__sub">Latest batch synchronizations from edge devices</p></div>
+          <a class="btn btn--ghost" href="#/audit">Audit trail</a></div>
+        <div class="tablewrap" id="ov-events"></div>
+      </article>
+    </section>
 
-        <div class="flex items-center space-x-3">
-          <div class="text-right font-mono text-[11px] text-slate-400 hidden md:block">
-            <div>Gate Status: <strong class="text-red-400">TRANSFER BLOCKED</strong></div>
-            <div class="text-[10px] text-slate-500">Requires Supervisor Readback</div>
+    <!-- ===================== LIVING ARCHITECTURE ===================== -->
+    <section id="screen-architecture" class="stack" aria-labelledby="h-arch" hidden>
+      <div class="page-head">
+        <div><h1 id="h-arch">Living Architecture</h1><p>Select a component to inspect it. A packet moves only when a real event or recorded agent step arrives.</p></div>
+      </div>
+      <div class="arch">
+        <article class="card topo" aria-label="Architecture topology">
+          <div class="legend" aria-label="Connection states">
+            <span><i class="active"></i>Active</span><span><i class="healthy"></i>Healthy / persisted</span><span><i class="degraded"></i>Degraded</span><span><i class="blocked"></i>Blocked / critical</span><span><i></i>Idle / unknown</span>
           </div>
-          <button onclick="clearActiveAlert()" id="btn-acknowledge-clear"
-            class="flex items-center space-x-2 px-4 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-950/60 transition-all active:scale-95">
-            <i data-lucide="check-check" class="w-4 h-4"></i>
-            <span>Acknowledge & Clear</span>
-          </button>
+          <div class="topo__stage" id="topo-stage">
+            <svg class="topo__svg" id="topo-svg" aria-hidden="true">
+              <defs>
+                <marker id="ar-idle" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="#BDC1C6"/></marker>
+                <marker id="ar-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="#1A73E8"/></marker>
+                <marker id="ar-healthy" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="#188038"/></marker>
+                <marker id="ar-degraded" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="#F9AB00"/></marker>
+                <marker id="ar-blocked" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9 z" fill="#D93025"/></marker>
+              </defs>
+              <g id="wires"></g><g id="packets"></g>
+            </svg>
+            <div class="topo__grid" id="topo-grid" role="group" aria-label="Components"></div>
+          </div>
+        </article>
+        <aside class="card inspector" id="inspector" aria-label="Component inspector" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <!-- ===================== TELEMETRY ===================== -->
+    <section id="screen-telemetry" class="stack" aria-labelledby="h-tel" hidden>
+      <div class="page-head">
+        <div><h1 id="h-tel">Telemetry</h1><p id="tel-sub">Simulated plant feed</p></div>
+        <div class="tabs" role="group" aria-label="Filter sensors" id="sensor-filters">
+          <button class="tab" data-f="all" aria-pressed="true">All</button>
+          <button class="tab" data-f="normal" aria-pressed="false">Normal</button>
+          <button class="tab" data-f="warn" aria-pressed="false">Attention</button>
+          <button class="tab" data-f="critical" aria-pressed="false">Critical</button>
         </div>
       </div>
+      <div class="notice"><svg class="i"><use href="#i-info"/></svg><div>These readings come from Baton's <b>simulated plant feed</b>, the mock source the safety rules check logs against. They are not live plant telemetry, and the feed carries no per-sensor timestamps or history, so no trends are shown.</div></div>
+      <div class="grid grid--sensors" id="sensor-grid"></div>
+      <article class="card" aria-labelledby="permits-title">
+        <div class="card__head"><div><h2 class="card__title" id="permits-title"><svg class="i"><use href="#i-clipboard-list"/></svg>Work permits</h2><p class="card__sub">Permits the rules evaluate (simulated)</p></div></div>
+        <div class="tablewrap" id="permit-table"></div>
+      </article>
+    </section>
 
-      <!-- TOPOLOGY CANVAS CENTERPIECE -->
-      <section class="relative rounded-2xl bg-slate-900/60 dark:bg-slate-900/70 border border-slate-800 backdrop-blur-md p-6 shadow-2xl overflow-hidden">
-        
-        <!-- Canvas Status & Telemetry Header -->
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-800/80">
-          <div class="flex items-center space-x-3">
-            <div class="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
-              <i data-lucide="activity" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                Google Cloud Living Architecture Topology
-              </h2>
-              <p class="text-xs text-slate-400">Live animated data packets traversing edge devices, serverless Cloud Run gateway, safety engines, and Vertex AI agents</p>
-            </div>
+    <!-- ===================== AUDIT TRAIL ===================== -->
+    <section id="screen-audit" class="stack" aria-labelledby="h-audit" hidden>
+      <div class="page-head">
+        <div><h1 id="h-audit">Audit Trail</h1><p id="audit-sub">Events, incidents and service configuration</p></div>
+        <div style="min-width:240px;flex:0 1 320px"><label class="sr-only" for="audit-search">Search</label><input class="field" id="audit-search" type="search" placeholder="Search this view (id, asset, rule, text)…"></div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Audit views" id="audit-tabs">
+        <button class="tab" role="tab" data-t="events" aria-selected="true">Recent events</button>
+        <button class="tab" role="tab" data-t="incidents" aria-selected="false">Incidents</button>
+        <button class="tab" role="tab" data-t="syncs" aria-selected="false">Batch syncs</button>
+        <button class="tab" role="tab" data-t="service" aria-selected="false">Persistence &amp; revisions</button>
+      </div>
+      <article class="card" role="tabpanel"><div class="tablewrap" id="audit-body"></div></article>
+    </section>
+
+    <!-- ===================== AGENT TRACE + ASK ===================== -->
+    <section id="screen-agents" class="stack" aria-labelledby="h-agents" hidden>
+      <div class="page-head">
+        <div><h1 id="h-agents">Agent Trace</h1><p>Every agent, tool call, retrieved document, rule verdict and guardrail of a run, and answers grounded in your SOPs and past handovers.</p></div>
+      </div>
+      <div class="notice notice--warn" id="agents-locked"><svg class="i"><use href="#i-lock"/></svg><div style="flex:1">Traces and Ask the logs need the supervisor key. It stays in this browser tab only.</div><button class="btn btn--primary" data-action="key">Enter supervisor key</button></div>
+      <div class="grid grid--agents" id="agents-grid">
+        <article class="card" aria-labelledby="trace-title">
+          <div class="card__head">
+            <div><h2 class="card__title" id="trace-title"><svg class="i"><use href="#i-workflow"/></svg>Run trace</h2><p class="card__sub" id="trace-sub">Select a run</p></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="chip" id="trace-status">No run</span><label class="sr-only" for="run-select">Run</label><select class="field field--select" id="run-select"></select></div>
           </div>
-
-          <!-- Quick Metrics Bar -->
-          <div class="flex items-center space-x-3 text-xs font-mono">
-            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300">
-              <span class="text-slate-500">ASR AUDIO:</span>
-              <span class="text-sky-400 font-bold" id="arch-stat-asr">25</span>
-            </div>
-            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300">
-              <span class="text-slate-500">BATCH SYNCS:</span>
-              <span class="text-emerald-400 font-bold" id="arch-stat-syncs">4</span>
-            </div>
-            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300">
-              <span class="text-slate-500">SAFETY STATE:</span>
-              <span class="text-red-400 font-bold" id="arch-stat-state">CRITICAL GATE</span>
-            </div>
-            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300">
-              <span class="text-slate-500">FIRESTORE:</span>
-              <span class="text-purple-400 font-bold" id="arch-stat-firestore">PERSISTED</span>
-            </div>
+          <div class="card__body stack" style="gap:12px">
+            <div id="trace-summary" class="small muted" style="display:flex;gap:6px 14px;flex-wrap:wrap"></div>
+            <div id="trace-question" hidden></div>
+            <div id="trace-timeline" style="display:flex;flex-direction:column;gap:8px"><div class="empty">Unlock, then sync a handover or pick a run to see its trace.</div></div>
+            <div id="trace-verdicts" hidden></div>
+            <div id="trace-brief" hidden></div>
           </div>
-        </div>
-
-        <!-- DIAGRAM SVG & NODE STAGE -->
-        <div class="relative w-full h-[430px] select-none" id="topology-stage">
-          
-          <!-- SVG CONNECTIONS & TRAVELING PARTICLES -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none" id="topology-svg" viewBox="0 0 1000 420" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="wire-a-to-b" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.95"/>
-              </linearGradient>
-              <linearGradient id="wire-b-to-c" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
-                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.95"/>
-              </linearGradient>
-              <linearGradient id="wire-b-to-d" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
-                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.95"/>
-              </linearGradient>
-              <linearGradient id="wire-b-to-e" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
-                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.95"/>
-              </linearGradient>
-            </defs>
-
-            <!-- Path 1: Node A -> Node B -->
-            <path id="path-a-to-b" d="M 130 210 C 230 210, 260 210, 360 210"
-              fill="none" stroke="url(#wire-a-to-b)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
-
-            <!-- Path 2: Node B -> Node C (Safety Engine) -->
-            <path id="path-b-to-c" d="M 490 210 C 580 210, 640 80, 730 80"
-              fill="none" stroke="url(#wire-b-to-c)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
-
-            <!-- Path 3: Node B -> Node D (Vertex AI) -->
-            <path id="path-b-to-d" d="M 490 210 C 580 210, 640 210, 730 210"
-              fill="none" stroke="url(#wire-b-to-d)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
-
-            <!-- Path 4: Node B -> Node E (Cloud Firestore) -->
-            <path id="path-b-to-e" d="M 490 210 C 580 210, 640 340, 730 340"
-              fill="none" stroke="url(#wire-b-to-e)" stroke-width="2.5" class="flow-wire" stroke-linecap="round"/>
-
-            <!-- Dynamic Particles Layer -->
-            <g id="dynamic-packets-layer"></g>
-          </svg>
-
-          <!-- TOPOLOGY NODES (HTML Glassmorphism Cards) -->
-          <div class="absolute inset-0 grid grid-cols-12 grid-rows-3 gap-4 pointer-events-none p-2">
-            
-            <!-- NODE A: EDGE MOBILE (ANDROID / GEMMA) -->
-            <div class="col-span-3 row-start-2 flex items-center justify-center">
-              <div id="node-edge" class="pointer-events-auto w-full max-w-[245px] bg-slate-900/90 border border-sky-500/40 rounded-2xl p-4 shadow-xl transition-all duration-300 hover:border-sky-400">
-                <div class="flex items-center justify-between mb-2">
-                  <div class="flex items-center space-x-2">
-                    <!-- Android SVG Logo -->
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0001s.4482-1.0001.9993-1.0001c.5516 0 .9997.4486.9997 1.0001s-.4481 1.0001-.9997 1.0001m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0001s.4482-1.0001.9993-1.0001c.5516 0 .9997.4486.9997 1.0001s-.4481 1.0001-.9997 1.0001m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.01 12 8.01s-3.5902.4016-5.1368.9397L4.8409 5.4467a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.741h24c-.3432-4.0821-2.6889-7.5543-6.1185-9.4196"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="text-xs font-bold text-white tracking-wide">Node A: Edge Mobile</h3>
-                      <span class="text-[10px] text-sky-400 font-mono">Android • Flutter</span>
-                    </div>
-                  </div>
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
-                </div>
-                <p class="text-[11px] text-slate-400 font-mono leading-tight">LiteRT • Gemma 4 E4B • QR Mesh</p>
-                <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono">
-                  <span class="text-slate-500">Source:</span>
-                  <span class="text-sky-300">Dart/3.13 (dart:io)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- NODE B: GATEWAY (CLOUD RUN) -->
-            <div class="col-span-4 col-start-4 row-start-2 flex items-center justify-center">
-              <div id="node-gateway" class="pointer-events-auto w-full max-w-[280px] bg-slate-900/90 border border-sky-500/40 rounded-2xl p-4 shadow-xl transition-all duration-300 hover:border-sky-400">
-                <div class="flex items-center justify-between mb-2">
-                  <div class="flex items-center space-x-2">
-                    <!-- Google Cloud Run SVG Logo -->
-                    <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM10 17l-1.41-1.41L11.17 13H5v-2h6.17l-2.58-2.59L10 7l5 5-5 5z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="text-xs font-bold text-white tracking-wide">Node B: Gateway</h3>
-                      <span class="text-[10px] text-sky-400 font-mono">Cloud Run (baton-api)</span>
-                    </div>
-                  </div>
-                  <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-sky-500/10 text-sky-300 border border-sky-500/20">asia-se1</span>
-                </div>
-                <p class="text-[11px] text-slate-400 font-mono leading-tight">FastAPI Ingestion & Noise Filter</p>
-                <div class="mt-3 pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-[10px] font-mono">
-                  <div>
-                    <span class="text-slate-500">Revision:</span>
-                    <div class="text-slate-300 truncate" id="top-b-rev">baton-api-00010</div>
-                  </div>
-                  <div>
-                    <span class="text-slate-500">Latency:</span>
-                    <div class="text-emerald-400 font-semibold" id="top-b-lat">~18ms</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- RIGHT COLUMN NODES: C, D, E (Stacked) -->
-            <div class="col-span-5 col-start-8 row-span-3 flex flex-col justify-between py-1">
-              
-              <!-- NODE C: SAFETY ENGINE (RULES R1-R4) -->
-              <div class="flex justify-start">
-                <div id="node-safety" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-red-500/50 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-red-400">
-                  <div class="flex items-center justify-between mb-1.5">
-                    <div class="flex items-center space-x-2">
-                      <div class="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                        <i data-lucide="shield-check" class="w-4 h-4"></i>
-                      </div>
-                      <div>
-                        <h3 class="text-xs font-bold text-white tracking-wide">Node C: Safety Engine</h3>
-                        <span class="text-[10px] text-red-400 font-mono">Rules R1-R4 • SCADA Interlock</span>
-                      </div>
-                    </div>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30" id="node-c-status">
-                      CRITICAL (R1)
-                    </span>
-                  </div>
-                  <div class="text-[10px] font-mono text-slate-300 bg-red-950/30 border border-red-900/40 rounded-lg p-1.5 flex items-center justify-between mt-1">
-                    <span>Target: <strong class="text-red-400" id="node-c-target">P-201B</strong></span>
-                    <span class="text-slate-400">DCS: <strong class="text-amber-400" id="node-c-dcs">OPEN</strong> vs Assert: <strong class="text-red-400" id="node-c-assert">ISOLATED</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- NODE D: AGENT HUB (VERTEX AI / GEMINI 2.5) -->
-              <div class="flex justify-start">
-                <div id="node-vertex" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-amber-500/40 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-amber-400">
-                  <div class="flex items-center justify-between mb-1.5">
-                    <div class="flex items-center space-x-2">
-                      <!-- Vertex AI Sparkle Logo -->
-                      <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2L9.09 9.09 2 12l7.09 2.91L12 22l2.91-7.09L22 12l-7.09-2.91z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-xs font-bold text-white tracking-wide">Node D: Agent Hub</h3>
-                        <span class="text-[10px] text-amber-400 font-mono">Vertex AI • Gemini 2.5 Flash</span>
-                      </div>
-                    </div>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      LIVE INFERENCE
-                    </span>
-                  </div>
-                  <p class="text-[10px] text-slate-300 font-sans line-clamp-2 italic bg-slate-950/60 p-1.5 rounded-lg border border-slate-800" id="node-d-summary">
-                    "Shift operations nominal. Immediate action required for expired permit PERMIT-M-102."
-                  </p>
-                </div>
-              </div>
-
-              <!-- NODE E: STORAGE (CLOUD FIRESTORE LIVE) -->
-              <div class="flex justify-start">
-                <div id="node-firestore" class="pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-purple-500/40 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-purple-400">
-                  <div class="flex items-center justify-between mb-1.5">
-                    <div class="flex items-center space-x-2">
-                      <!-- Cloud Firestore SVG Logo -->
-                      <div class="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-xs font-bold text-white tracking-wide">Node E: Cloud Firestore</h3>
-                        <span class="text-[10px] text-purple-400 font-mono">Audit Ledger • asia-southeast1</span>
-                      </div>
-                    </div>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                      PERSISTED (LIVE)
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-1">
-                    <span>Audit Entries: <strong class="text-purple-300 font-bold" id="arch-ledger-count">2 documents</strong></span>
-                    <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Synced</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
+        </article>
+        <article class="card" aria-labelledby="ask-title">
+          <div class="card__head"><div><h2 class="card__title" id="ask-title"><svg class="i"><use href="#i-message-square-text"/></svg>Ask the logs</h2><p class="card__sub">Answers only from retrieved evidence, with citations</p></div></div>
+          <div class="card__body stack" style="gap:10px">
+            <div><label class="label" for="ask-unit">Unit</label><input class="field" id="ask-unit" value="HYDROCRACKER-01" autocomplete="off"></div>
+            <div><label class="label" for="ask-question">Question (English, Tamil, Malay…)</label><textarea class="field" id="ask-question" rows="3" maxlength="500" placeholder="Is it safe to start hot work near V-102?"></textarea></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="ask-examples"></div>
+            <button class="btn btn--primary" id="ask-btn"><svg class="i"><use href="#i-send"/></svg>Ask</button>
+            <div id="ask-result" aria-live="polite"></div>
           </div>
+        </article>
+      </div>
+    </section>
 
-        </div>
-
-      </section>
-
-      <!-- EXECUTIVE BRIEF & PLANT SCADA MINI-PANEL -->
-      <section class="grid grid-cols-1 md:grid-cols-12 gap-6">
-        
-        <!-- Live Executive Brief Snippet Card (8 Cols) -->
-        <div class="md:col-span-8 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div class="flex items-center space-x-2.5">
-                <div class="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                  <i data-lucide="sparkles" class="w-4 h-4"></i>
-                </div>
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Gemini 2.5 Flash // Shift Executive Brief</h4>
-              </div>
-              <span class="text-[10px] font-mono text-slate-400" id="brief-timestamp">Processed: Real-time</span>
-            </div>
-            <p class="text-xs text-slate-300 mt-3 leading-relaxed font-sans" id="executive-brief-text">
-              Shift handover logs synchronized cleanly. Pump P-201B currently flagged for isolation verification against live telemetry. Expired maintenance permit PERMIT-M-102 requires immediate formal closeout.
-            </p>
-          </div>
-
-          <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-            <span class="text-slate-400">Handover Safety Protocol:</span>
-            <span class="text-amber-400 font-semibold flex items-center gap-1" id="brief-protocol-status">
-              <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Readback Required
-            </span>
-          </div>
-        </div>
-
-        <!-- SCADA Sensor Grid Cleaned (4 Cols) -->
-        <div class="md:col-span-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div class="flex items-center space-x-2">
-                <i data-lucide="gauge" class="w-4 h-4 text-sky-400"></i>
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider">SCADA Telemetry Sensors</h4>
-              </div>
-              <span class="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live
-              </span>
-            </div>
-
-            <!-- Dynamic Clean Sensors Grid (Zero undefined%) -->
-            <div class="mt-3 grid grid-cols-2 gap-2" id="scada-sensor-grid">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-
-          <div class="mt-3 text-[10px] font-mono text-slate-500 flex justify-between">
-            <span>Plant: Hydrocracker Unit 01</span>
-            <span>Safety Gate: Active</span>
-          </div>
-        </div>
-
-      </section>
-
-    </div>
-
-    <!-- =============================================================== -->
-    <!-- SCREEN 2: "DEEP TELEMETRY & DEBUG CONSOLE" (ENGINEERING VIEW)  -->
-    <!-- =============================================================== -->
-    <div id="screen-debug" class="screen-view hidden flex-col gap-6">
-      
-      <!-- LIVE ENDPOINT MATRIX -->
-      <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
-        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div class="flex items-center space-x-3">
-            <div class="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
-              <i data-lucide="cpu" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <h3 class="text-sm font-bold text-white uppercase tracking-wider">Live Cloud Run Endpoint Matrix</h3>
-              <p class="text-xs text-slate-400">Direct telemetry, latencies, and active HTTP status across backend microservices</p>
-            </div>
-          </div>
-          <span class="px-2.5 py-1 rounded text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            ALL ENDPOINTS OPERATIONAL
-          </span>
-        </div>
-
-        <!-- 4-Card Endpoint Grid -->
-        <div class="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          <!-- Endpoint 1: Health Probe -->
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-colors">
-            <div class="flex items-center justify-between mb-2">
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300">GET</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">HTTP 200</span>
-            </div>
-            <div class="text-xs font-mono font-bold text-white truncate">/api/v1/health</div>
-            <p class="text-[11px] text-slate-400 mt-1">Flutter Airplane Reconnection Probe</p>
-            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>Avg Latency:</span>
-              <span class="text-emerald-400 font-semibold">~4.2ms</span>
-            </div>
-          </div>
-
-          <!-- Endpoint 2: Audio Transcribe -->
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-colors">
-            <div class="flex items-center justify-between mb-2">
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">POST</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">HTTP 200</span>
-            </div>
-            <div class="text-xs font-mono font-bold text-white truncate">/api/transcribe</div>
-            <p class="text-[11px] text-slate-400 mt-1">Vertex AI Gemini 2.5 Flash Audio ASR</p>
-            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>Avg Latency:</span>
-              <span class="text-sky-400 font-semibold">~2.38s</span>
-            </div>
-          </div>
-
-          <!-- Endpoint 3: Batch Sync -->
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-colors">
-            <div class="flex items-center justify-between mb-2">
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">POST</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">HTTP 200</span>
-            </div>
-            <div class="text-xs font-mono font-bold text-white truncate">/api/v1/handover/batch_sync</div>
-            <p class="text-[11px] text-slate-400 mt-1">Deterministic Rules R1-R4 + Firestore</p>
-            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>Avg Latency:</span>
-              <span class="text-emerald-400 font-semibold">~118ms</span>
-            </div>
-          </div>
-
-          <!-- Endpoint 4: Firestore Storage -->
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-colors">
-            <div class="flex items-center justify-between mb-2">
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300">PERSIST</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300">LIVE (default)</span>
-            </div>
-            <div class="text-xs font-mono font-bold text-white truncate">Cloud Firestore DB</div>
-            <p class="text-[11px] text-slate-400 mt-1">Permanent Ledger (asia-southeast1)</p>
-            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
-              <span>Persisted Docs:</span>
-              <span class="text-purple-400 font-semibold" id="matrix-firestore-count">2 entries</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- REAL-TIME SUBSTANTIVE REQUEST STREAM & EXPANDABLE JSON DRAWER -->
-      <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-        
-        <!-- Header & Category Filter Tabs -->
-        <div>
-          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-            <div class="flex items-center space-x-2.5">
-              <div class="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
-                <i data-lucide="layers" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Substantive Request Telemetry Stream</h3>
-                <p class="text-xs text-slate-400">Polling noise eliminated at the Cloud Logging API layer</p>
-              </div>
-            </div>
-
-            <!-- Filter Pills -->
-            <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
-              <button onclick="setLogFilter('ALL')" id="tab-ALL" class="px-3 py-1 rounded-lg text-white bg-sky-600 font-medium transition-colors">
-                All (<span id="count-tab-all">31</span>)
-              </button>
-              <button onclick="setLogFilter('TRANSCRIBE')" id="tab-TRANSCRIBE" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
-                Audio ASR (<span id="count-tab-asr">25</span>)
-              </button>
-              <button onclick="setLogFilter('BATCH_SYNC')" id="tab-BATCH_SYNC" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
-                Batch Sync (<span id="count-tab-sync">4</span>)
-              </button>
-              <button onclick="setLogFilter('ANOMALY')" id="tab-ANOMALY" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">
-                Conflicts (<span id="count-tab-anom">4</span>)
-              </button>
-            </div>
-          </div>
-
-          <!-- Structured Log Feed (Scrollable with Expandable JSON Drawer) -->
-          <div class="mt-4 space-y-2.5 max-h-[460px] overflow-y-auto pr-1" id="debug-logs-container">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-
-        <!-- Footer status bar -->
-        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Stream polling active (2000ms interval)
-          </span>
-          <span id="debug-last-updated-time">Updated: Just now</span>
-        </div>
-
-      </section>
-
-    </div>
-
+    <!-- ===================== DEBUG CONSOLE ===================== -->
+    <section id="screen-debug" class="stack" aria-labelledby="h-debug" hidden>
+      <div class="page-head">
+        <div><h1 id="h-debug">Debug Console</h1><p>Endpoint health and request telemetry measured from real traffic. Engineering view.</p></div>
+      </div>
+      <article class="card" aria-labelledby="ep-title">
+        <div class="card__head"><div><h2 class="card__title" id="ep-title"><svg class="i"><use href="#i-cpu"/></svg>Service endpoints</h2><p class="card__sub">Latency is the median of recent real requests; health is probed from this browser</p></div></div>
+        <div class="tablewrap" id="debug-endpoints"></div>
+      </article>
+      <article class="card" aria-labelledby="req-title">
+        <div class="card__head"><div><h2 class="card__title" id="req-title"><svg class="i"><use href="#i-layers"/></svg>Request telemetry</h2><p class="card__sub">Substantive requests only (polling noise is filtered at the Cloud Logging query)</p></div>
+          <div class="tabs" role="group" aria-label="Filter requests" id="log-filters">
+            <button class="tab" data-f="ALL" aria-pressed="true">All</button><button class="tab" data-f="TRANSCRIBE" aria-pressed="false">Audio</button>
+            <button class="tab" data-f="BATCH_SYNC" aria-pressed="false">Sync</button><button class="tab" data-f="ANOMALY" aria-pressed="false">Errors</button>
+          </div></div>
+        <div class="tablewrap" id="debug-logs"></div>
+      </article>
+    </section>
   </main>
 
-  <!-- JAVASCRIPT ORCHESTRATION & DUAL-SCREEN LOGIC -->
-  <script>
-    // State variables
-    let currentLogFilter = 'ALL';
-    let cachedLogs = [];
-    let lastKnownEventId = null;
-    let isPolling = false;
-    let activeScreen = 'architecture';
+  <div id="drawer-root"></div>
+  <div id="modal-root"></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
-    // Simulation Payloads
-    const PAYLOAD_NOMINAL = {
-      device_id: "pixel7-edge-unit1",
-      operator_id: "TECH-PRIYA-09",
-      shift_name: "DAY-SHIFT-B",
-      unit_name: "HYDROCRACKER-01",
-      capsules: [
-        {
-          uuid: "capsule-" + Date.now(),
-          timestamp: new Date().toISOString(),
-          category: "EQUIPMENT",
-          asset_tag: "TK-101",
-          asserted_state: "OPEN",
-          text_transcript: "Feed Tank TK-101 inlet valve OPEN and operating nominal at 82% capacity.",
-          intent_severity: "INFO"
-        }
-      ]
-    };
+<script>
+(() => {
+'use strict';
+/* ==========================================================================================
+   Baton Control Room. Presentation only: every value shown comes from the API.
+   Sections: utils · state · toasts · key · selectors · overview · telemetry · audit · debug ·
+             topology · agent trace · ask · incident drawer · router · polling
+   ========================================================================================== */
 
-    const PAYLOAD_CONFLICT = {
-      device_id: "pixel7-edge-unit1",
-      operator_id: "TECH-ARUN-42",
-      shift_name: "NIGHT-SHIFT-A",
-      unit_name: "HYDROCRACKER-01",
-      capsules: [
-        {
-          uuid: "capsule-" + Date.now(),
-          timestamp: new Date().toISOString(),
-          category: "ISOLATION",
-          asset_tag: "P-201B",
-          asserted_state: "ISOLATED",
-          text_transcript: "Pump P-201B isolated and lock applied at 10:30 by Arun",
-          intent_severity: "CRITICAL"
-        }
-      ]
-    };
+// ---------------------------------------------------------------- utils
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ic = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function fmtMs(ms) { return ms == null || isNaN(ms) ? '–' : (ms >= 1000 ? (ms / 1000).toFixed(1) + ' s' : Math.round(ms) + ' ms'); }
+function clock(ts) { return ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '–'; }
+function dateTime(ts) { return ts ? new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'; }
+function ago(ts) {
+  if (!ts) return 'never';
+  const s = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 1000));
+  if (s < 5) return 'just now'; if (s < 60) return s + ' s ago';
+  if (s < 3600) return Math.round(s / 60) + ' min ago'; if (s < 86400) return Math.round(s / 3600) + ' h ago';
+  return Math.round(s / 86400) + ' d ago';
+}
+function parseLatency(v) {            // "0.283s" (Cloud Run) or "118ms" (in-process) -> ms
+  if (v == null) return null; const t = String(v).trim();
+  const n = parseFloat(t); if (isNaN(n)) return null;
+  return t.endsWith('ms') ? n : t.endsWith('s') ? n * 1000 : n;
+}
+const plain = t => String(t ?? '').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();   // legacy summaries contain markdown
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+function setHTML(el, html) { if (el && el.__h !== html) { el.innerHTML = html; el.__h = html; } }
+function chip(kind, text, icon, title) {
+  return `<span class="chip chip--${kind}"${title ? ` title="${esc(title)}"` : ''}>${icon ? ic(icon, 'i--sm') : ''}${esc(text)}</span>`;
+}
+const SEV = {
+  CRITICAL: { kind: 'critical', icon: 'triangle-alert', label: 'Critical' },
+  WARNING: { kind: 'warn', icon: 'circle-alert', label: 'Warning' },
+  INFO: { kind: 'info', icon: 'info', label: 'Info' },
+};
+const sevChip = (sev, text) => { const s = SEV[sev] || SEV.INFO; return chip(s.kind, text ?? s.label, s.icon); };
+const STATUS_CHIP = { running: ['info', 'Running', 'clock'], completed: ['ok', 'Completed', 'circle-check'], fallback: ['warn', 'Fallback', 'circle-alert'], failed: ['critical', 'Failed', 'triangle-alert'] };
+const runChip = st => { const c = STATUS_CHIP[st] || ['neutral', st || 'Unknown', 'info']; return chip(c[0], c[1], c[2]); };
 
-    function refreshIcons() {
-      if (window.lucide) window.lucide.createIcons();
+// ---------------------------------------------------------------- state
+const S = {
+  stream: null, firstLoad: true, error: null, lastOk: 0, pollMs: [], health: null,
+  lastEventTs: null, route: 'overview', selectedNode: null,
+  aiOpen: false, auditTab: 'events', auditQuery: '', openRows: new Set(), logFilter: 'ALL', sensorFilter: 'all',
+  runs: [], selectedRunId: null, agentsStatus: null, actions: {},
+};
+
+// ---------------------------------------------------------------- toasts
+function toast(msg, kind = 'ok') {
+  const t = document.createElement('div'); t.className = `toast toast--${kind}`;
+  t.innerHTML = `${ic(kind === 'ok' ? 'circle-check' : 'triangle-alert', 'i--lg')}<div>${esc(msg)}</div>`;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), kind === 'ok' ? 4500 : 7000);
+}
+
+// ---------------------------------------------------------------- supervisor key (shared by Acknowledge, Agent Trace, Ask)
+const KEY_NAME = 'baton_aegis_key';
+const getKey = () => { try { return sessionStorage.getItem(KEY_NAME); } catch (e) { return null; } };
+const setKey = k => { try { k ? sessionStorage.setItem(KEY_NAME, k) : sessionStorage.removeItem(KEY_NAME); } catch (e) {} };
+function renderKeyState() {
+  const on = !!getKey();
+  $('#key-state').textContent = on ? 'Unlocked for this tab' : 'Locked';
+  $('#agents-locked').hidden = on;
+  const g = $('#agents-grid'); g.style.opacity = on ? '1' : '.45'; g.style.pointerEvents = on ? '' : 'none';
+}
+async function api(path, opts = {}) {
+  const k = getKey(); if (!k) throw new Error('locked');
+  const r = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), 'X-Aegis-Key': k } });
+  if (r.status === 401) { setKey(null); renderKeyState(); toast('Supervisor key rejected. Unlock again.', 'bad'); throw new Error('unauthorized'); }
+  return r;
+}
+let lastFocus = null;
+function openModal(html, labelId) {
+  lastFocus = document.activeElement;
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="modal" data-close="1"><div class="modal__box" role="dialog" aria-modal="true" aria-labelledby="${labelId}">${html}</div></div>`;
+  const f = $('input, textarea, button', root); if (f) setTimeout(() => f.focus(), 30);
+}
+function closeModal() { $('#modal-root').innerHTML = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+function openUnlock() {
+  openModal(`<h2 id="unlock-h" class="card__title">${ic('key-round', 'i--lg')} Supervisor key</h2>
+    <p class="muted small" style="margin:6px 0 12px">Unlocks Agent Trace, Ask the logs and Acknowledge for this browser tab. The key is kept in sessionStorage only.</p>
+    <label class="sr-only" for="unlock-input">Supervisor key</label>
+    <input class="field" id="unlock-input" type="password" autocomplete="off" placeholder="X-Aegis-Key">
+    <div id="unlock-err" class="small" style="color:var(--red-text);margin-top:8px" role="alert"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      ${getKey() ? '<button class="btn btn--ghost" data-action="lock">Lock</button>' : ''}
+      <button class="btn" data-close="1">Cancel</button><button class="btn btn--primary" data-action="unlock-submit">Unlock</button></div>`, 'unlock-h');
+  $('#unlock-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitUnlock(); });
+}
+async function submitUnlock() {
+  const k = $('#unlock-input').value.trim(), err = $('#unlock-err'); if (!k) return;
+  try {
+    const r = await fetch('/api/v1/agents/runs?limit=1', { headers: { 'X-Aegis-Key': k } });
+    if (r.status === 401) { err.textContent = 'Key rejected.'; return; }
+    if (!r.ok) { err.textContent = `Could not verify the key (HTTP ${r.status}).`; return; }
+  } catch (e) { err.textContent = 'Could not reach the server.'; return; }
+  setKey(k); closeModal(); renderKeyState(); toast('Supervisor key accepted for this tab.');
+  refreshRunList(true); renderRoute();
+}
+
+// ---------------------------------------------------------------- selectors (all derived from the stream)
+const events = () => (S.stream && S.stream.events) || [];
+const isBaseline = ev => /^batch-init-/.test(ev.id || '');
+const unresolved = c => String(c.status || 'OPEN').toUpperCase() !== 'RESOLVED';
+const isAcked = c => String(c.status || '').toUpperCase() === 'ACKNOWLEDGED';
+function incidents() {                // distinct unresolved conflicts from the last 24 h, newest event first
+  const cutoff = Date.now() - 24 * 3600 * 1000, seen = new Map();
+  for (const ev of events()) {
+    if (isBaseline(ev) || new Date(ev.timestamp).getTime() < cutoff) continue;
+    for (const c of (ev.conflicts || [])) {
+      if (!unresolved(c)) continue;
+      const key = `${c.rule_id}|${c.title}`;
+      if (!seen.has(key)) seen.set(key, { c, ev, count: 1 }); else seen.get(key).count++;
     }
+  }
+  return [...seen.values()].sort((a, b) => (b.c.severity === 'CRITICAL') - (a.c.severity === 'CRITICAL'));
+}
+function safetyState() {
+  const inc = incidents(), crit = inc.filter(i => i.c.severity === 'CRITICAL');
+  if (crit.length) return { kind: crit.every(i => isAcked(i.c)) ? 'critical-ack' : 'critical', inc, crit, top: crit.find(i => !isAcked(i.c)) || crit[0] };
+  if (inc.length) return { kind: 'warning', inc, crit, top: inc[0] };
+  return { kind: 'clear', inc, crit, top: null };
+}
+const latestEvent = () => events().find(e => !isBaseline(e)) || events()[0] || null;
+const syncLogs = () => ((S.stream && S.stream.cloud_logs) || []).filter(l => l.category === 'BATCH_SYNC');
+const cf = () => (S.stream && S.stream.cloud_flow) || {};
+const connected = () => S.lastOk && Date.now() - S.lastOk < 7000 && !S.error;
+function sensorModel(tag, v) {
+  let value = v.status || '–', unit = '', extra = [];
+  if (v.pressure != null) { value = v.pressure; unit = 'bar'; }
+  else if (v.level_pct != null) { value = v.level_pct; unit = '%'; }
+  else if (v.flow_rate != null) { value = v.flow_rate; unit = 'm³/h'; }
+  else if (v.temp_c != null) { value = v.temp_c; unit = '°C'; }
+  else if (v.active != null) { value = v.active ? 'Engaged' : 'Off'; }
+  if (v.temp_c != null && unit !== '°C') extra.push(`${v.temp_c} °C`);
+  const linked = incidents().filter(i => (i.c.evidence_ids || []).some(e => String(e) === `DCS-${tag}`));
+  const worst = linked.find(i => i.c.severity === 'CRITICAL') || linked[0];
+  let sev = 'normal', stateText = v.status || 'OK';
+  if (worst) sev = worst.c.severity === 'CRITICAL' ? 'critical' : 'warn';
+  else if (String(v.status).toUpperCase() === 'BYPASS') { sev = 'warn'; stateText = 'BYPASS'; }
+  return { tag, value, unit, status: v.status || 'OK', sev, linked, extra, stateText };
+}
 
-    // ----------------------------------------------------
-    // DUAL-SCREEN SWITCHER (ZERO RELOAD)
-    // ----------------------------------------------------
-    function switchScreen(screenName) {
-      activeScreen = screenName;
-      const screenArch = document.getElementById('screen-architecture');
-      const screenDebug = document.getElementById('screen-debug');
-      const btnArch = document.getElementById('nav-btn-architecture');
-      const btnDebug = document.getElementById('nav-btn-debug');
+// ---------------------------------------------------------------- header + connection
+function renderHeader() {
+  const ev = latestEvent(), f = cf();
+  $('#ctx-plant').textContent = `Plant: ${ev ? ev.unit_name : '–'}`;
+  $('#ctx-env').textContent = `Cloud Run · ${(f.cloud_run || {}).region || 'asia-southeast1'}${(f.cloud_run || {}).active_revision ? ' · ' + f.cloud_run.active_revision : ''}`;
+  const c = $('#conn'), ok = connected();
+  c.className = 'conn ' + (S.lastOk ? (ok ? 'conn--ok' : 'conn--bad') : '');
+  c.innerHTML = `${ic(ok || !S.lastOk ? 'wifi' : 'wifi-off', 'i--sm')}<span class="conn__text">${!S.lastOk ? 'Connecting…' : ok ? `Live · updated ${ago(S.lastOk)}` : 'Disconnected · retrying'}</span>`;
+}
 
-      if (screenName === 'architecture') {
-        screenArch.classList.remove('hidden');
-        screenDebug.classList.add('hidden');
-        btnArch.className = "flex items-center space-x-2 px-4 py-1.5 rounded-lg text-white bg-sky-600 font-semibold shadow-md shadow-sky-950/50 transition-all";
-        btnDebug.className = "flex items-center space-x-2 px-4 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all";
-      } else {
-        screenArch.classList.add('hidden');
-        screenDebug.classList.remove('hidden');
-        btnDebug.className = "flex items-center space-x-2 px-4 py-1.5 rounded-lg text-white bg-sky-600 font-semibold shadow-md shadow-sky-950/50 transition-all";
-        btnArch.className = "flex items-center space-x-2 px-4 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all";
-      }
-      refreshIcons();
+// ---------------------------------------------------------------- overview
+function renderBanner() {
+  const el = $('#incident-banner');
+  if (!S.stream) { setHTML(el, `<div class="banner"><div class="banner__icon skeleton"></div><div class="banner__main"><div class="skeleton" style="height:18px;width:50%"></div></div></div>`); return; }
+  const st = safetyState(), top = st.top;
+  if (st.kind === 'clear') {
+    setHTML(el, `<div class="banner banner--ok"><div class="banner__icon">${ic('shield-check', 'i--lg')}</div><div class="banner__main"><div class="banner__title">No unresolved conflicts ${chip('ok', 'Clear', 'circle-check')}</div><div class="banner__meta"><span>In the last 24 hours, across ${events().filter(e => !isBaseline(e)).length} handover(s) in the feed.</span></div></div></div>`);
+    return;
+  }
+  const c = top.c, ev = top.ev, asset = ((c.evidence_ids || []).map(e => String(e).replace(/^DCS-/, '')).find(e => (S.stream.dcs_telemetry || {})[e]));
+  const cap = (ev.capsules || []).find(x => x.asset_tag === asset), feed = asset && (S.stream.dcs_telemetry || {})[asset];
+  const evidence = asset && cap && feed ? `Logged state <b>${esc(cap.asserted_state)}</b> · simulated feed reports <b>${esc(feed.status)}</b>${feed.pressure != null ? ` at ${esc(feed.pressure)} bar` : ''}` : esc(c.description);
+  const crit = st.kind.startsWith('critical'), acked = st.kind === 'critical-ack';
+  const cls = crit && !acked ? 'critical' : 'warn';
+  const head = acked ? chip('warn', 'Acknowledged · still open', 'circle-alert') : sevChip(c.severity, c.severity === 'CRITICAL' ? 'CRITICAL' : 'WARNING');
+  setHTML(el, `<div class="banner banner--${cls}" role="${crit && !acked ? 'alert' : 'status'}">
+    <div class="banner__icon">${ic(crit && !acked ? 'shield-alert' : 'circle-alert', 'i--lg')}</div>
+    <div class="banner__main">
+      <div class="banner__title">${head}<span>${esc(c.title)}</span>${st.inc.length > 1 ? `<span class="muted small">+${st.inc.length - 1} more unresolved</span>` : ''}</div>
+      <div class="banner__meta"><span>${evidence}</span>
+        ${crit ? `<span><b>Handover transfer: ${acked ? 'still blocked until re-verified' : 'blocked'}</b> · supervisor readback required</span>` : ''}
+        <span>${esc(ev.id)} · ${esc(ev.shift_name)} · ${esc(dateTime(ev.timestamp))} · source: simulated plant feed</span></div>
+    </div>
+    <button class="btn ${crit && !acked ? 'btn--danger' : 'btn--primary'}" data-action="review">Review conflict</button></div>`);
+}
+function sparkline(vals) {
+  if (vals.length < 3) return '';
+  const max = Math.max(...vals), min = Math.min(...vals), w = 84, h = 24, span = max - min || 1;
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * (w - 2) + 1).toFixed(1)},${(h - 2 - (v - min) / span * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="Recent sync latencies"><polyline points="${pts}"/></svg>`;
+}
+function kpiCard(icon, kind, label, valueHtml, foot, extra = '') {
+  return `<article class="card kpi"><div class="kpi__top"><span class="kpi__label">${esc(label)}</span><span class="kpi__icon kpi__icon--${kind}">${ic(icon, 'i--lg')}</span></div><div class="kpi__value">${valueHtml}</div><div class="kpi__foot"><span>${foot}</span>${extra}</div></article>`;
+}
+function renderKpis() {
+  const el = $('#kpis');
+  if (!S.stream) { setHTML(el, [1, 2, 3, 4].map(() => `<article class="card kpi"><div class="skeleton" style="height:14px;width:50%"></div><div class="skeleton" style="height:28px;width:60%"></div><div class="skeleton" style="height:12px;width:80%"></div></article>`).join('')); return; }
+  const st = safetyState(), f = cf(), fs = f.firestore || {}, lat = syncLogs().map(l => parseLatency(l.latency)).filter(v => v != null);
+  const ackN = st.inc.filter(i => isAcked(i.c)).length;
+  const safety = { critical: ['shield-alert', 'critical', 'Critical'], 'critical-ack': ['shield-alert', 'warn', 'Critical (acknowledged)'], warning: ['circle-alert', 'warn', 'Attention'], clear: ['shield-check', 'ok', 'Clear'] }[st.kind];
+  const ok = connected(), nSensors = Object.keys(S.stream.dcs_telemetry || {}).length;
+  const persisted = fs.status === 'persisted';
+  setHTML(el,
+    kpiCard(safety[0], safety[1], 'Safety status', esc(safety[2]), `${st.inc.length} unresolved incident${st.inc.length === 1 ? '' : 's'}${ackN ? ` · ${ackN} acknowledged` : ''}`) +
+    kpiCard(ok ? 'wifi' : 'wifi-off', ok ? 'ok' : 'critical', 'Plant feed connectivity', ok ? 'Connected' : 'Disconnected', `Simulated feed · ${nSensors} sensors · updated ${esc(ago(S.lastOk))}`) +
+    kpiCard('activity', 'info', 'Gateway latency (last sync)', lat.length ? `<span class="mono">${esc(fmtMs(lat[0]))}</span>` : '–',
+      lat.length ? `median ${esc(fmtMs(median(lat)))} of last ${lat.length}` : 'No sync recorded yet', sparkline([...lat].reverse().slice(-20))) +
+    kpiCard('database', persisted ? 'ok' : 'warn', 'Audit persistence', persisted ? 'Persisted' : 'In memory only',
+      `${esc(fs.ledger_count ?? '–')} ledger entries · ${esc(fs.database || '')} ${esc(fs.location || '')}`.trim() + (latestEvent() ? ` · last sync ${esc(ago(latestEvent().timestamp))}` : '')));
+}
+async function loadActions(ev) {
+  if (!ev || !ev.device_id || !getKey() || S.actions[ev.id] !== undefined) return;
+  S.actions[ev.id] = null;
+  try {
+    const r = await api(`/api/v1/devices/${encodeURIComponent(ev.device_id)}/updates?since=${encodeURIComponent(new Date(new Date(ev.timestamp).getTime() - 3600e3).toISOString())}&unit=${encodeURIComponent(ev.unit_name)}`);
+    if (r.ok) { const u = (await r.json()).updates || []; S.actions[ev.id] = u.find(x => x.handover_id === ev.id) || false; renderAI(); }
+  } catch (e) { S.actions[ev.id] = undefined; }
+}
+function renderAI() {
+  const el = $('#ai-card'), ev = latestEvent();
+  const head = `<div class="card__head"><div><h2 class="card__title" id="ai-title"><span style="color:var(--violet)">${ic('sparkles', 'i--lg')}</span>AI executive brief</h2><p class="card__sub">Written by the agent pipeline from the latest handover</p></div>${chip('ai', 'AI-generated', 'sparkles')}</div>`;
+  if (!S.stream && S.error) { setHTML(el, head + `<div class="card__body"><div class="notice notice--bad">${ic('triangle-alert')}<div>Could not load the dashboard feed: ${esc(S.error)}. Retrying every 2 seconds.</div></div></div>`); return; }
+  if (!S.stream) { setHTML(el, head + `<div class="card__body"><div class="skeleton" style="height:18px;width:90%;margin-bottom:8px"></div><div class="skeleton" style="height:18px;width:75%"></div></div>`); return; }
+  if (!ev) { setHTML(el, head + `<div class="empty">No handovers yet. Sync from the app, or send a demo handover from the actions menu.</div>`); return; }
+  const b = ev.brief, ageMs = Date.now() - new Date(ev.timestamp).getTime(), stale = ageMs > 24 * 3600e3;
+  const ruleList = (ev.conflicts || []).length ? (ev.conflicts || []).map(c => ({ rule_id: c.rule_id, severity: c.severity, acked: isAcked(c) }))
+    : ((b && b.items) || []).filter(i => i.rule_id).map(i => ({ rule_id: i.rule_id, severity: i.severity }));   // the brief's rule items come from the same deterministic verdicts
+  const rules = ruleList.map(c => sevChip(c.severity, `${c.rule_id} · ${c.severity}${c.acked ? ' · acknowledged' : ''}`)).join(' ');
+  let body = `<div class="card__body stack" style="gap:14px">`;
+  if (stale) body += `<div class="notice notice--warn">${ic('clock')}<div>Stale data: the latest handover is ${esc(ago(ev.timestamp))}. Nothing newer has been synced.</div></div>`;
+  if (isBaseline(ev)) body += `<div class="notice">${ic('info')}<div>This is the dashboard's built-in baseline example, not a real sync.</div></div>`;
+  body += `<div><div class="label" style="margin-bottom:6px">Confirmed by rules (deterministic)</div><div style="display:flex;gap:6px;flex-wrap:wrap">${rules || chip('ok', 'No rule violations', 'circle-check')}</div></div>`;
+  if (b) {
+    const act = S.actions[ev.id];
+    body += `<div class="ai ${S.aiOpen ? 'ai--open' : ''}"><div class="label" style="color:var(--violet-text);margin-bottom:4px">Summary (AI-generated)</div><p class="ai__headline">${esc(b.headline)}</p></div>`;
+    if (S.aiOpen) {
+      body += `<div><div class="label" style="margin-bottom:2px">Findings</div>${(b.items || []).map(i => `<div class="find">${sevChip(i.severity, i.rule_id || i.severity)}<div>${esc(i.text)}${i.asset_tag ? ` <span class="mono muted small">${esc(i.asset_tag)}</span>` : ''}</div></div>`).join('') || '<div class="muted small">No individual findings.</div>'}</div>`;
+      const cites = b.citation_details || [];
+      body += `<div><div class="label" style="margin-bottom:6px">Sources</div>${cites.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${cites.map(c => getKey() ? `<button class="chip chip--info" data-chunk="${esc(c.chunk_id)}">${ic('file-text', 'i--sm')}${esc(c.title)}</button>` : chip('info', c.title, 'file-text')).join('')}</div>` : '<span class="muted small">No documents cited.</span>'}</div>`;
+      body += `<div><div class="label" style="margin-bottom:6px">Required actions (from rules)</div>${act ? `<ul style="margin:0;padding-left:18px;font-size:13px">${(act.required_actions || []).map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : act === false ? '<span class="muted small">None recorded for this handover.</span>' : getKey() ? '<span class="muted small">Loading…</span>' : '<span class="muted small">Unlock with the supervisor key to load the required actions recorded for this handover.</span>'}</div>`;
     }
+    body += `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><button class="btn btn--ghost" data-action="toggle-ai" aria-expanded="${S.aiOpen}">${ic(S.aiOpen ? 'chevron-down' : 'chevron-right', 'i--sm')}${S.aiOpen ? 'Show less' : `Show full brief (${(b.items || []).length} findings)`}</button>
+      <span class="small muted">${esc(b.model || 'agents')} · ${b.created_at ? esc(dateTime(b.created_at)) : esc(ago(ev.timestamp))} · ${chip(b.guardrail_status === 'fallback' ? 'warn' : b.guardrail_status === 'passed' ? 'ok' : 'info', 'guardrails: ' + b.guardrail_status)}</span></div>`;
+    if (S.aiOpen) loadActions(ev);
+  } else if (ageMs < 120000 && !isBaseline(ev)) {
+    body += `<div class="notice">${ic('clock')}<div><span class="spinner"></span> The agent pipeline is still writing the brief for ${esc(ev.id)}. It usually takes under 15 seconds.</div></div>`;
+  } else if (ev.summary) {
+    body += `<div class="ai"><div class="label" style="margin-bottom:4px">Inline summary (no agent brief exists for this event)</div><p>${esc(plain(ev.summary))}</p></div>`;
+  }
+  setHTML(el, head + body + '</div>');
+}
+function sensorMini(m) {
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--border-2)"><div><span class="mono" style="font-weight:600">${esc(m.tag)}</span> <span class="muted small">${esc(m.stateText)}</span></div><div style="display:flex;gap:8px;align-items:center"><span class="mono">${esc(m.value)}${m.unit ? ' ' + esc(m.unit) : ''}</span>${m.sev === 'critical' ? chip('critical', 'Critical', 'triangle-alert') : m.sev === 'warn' ? chip('warn', 'Attention', 'circle-alert') : ''}</div></div>`;
+}
+function renderOverview() {
+  renderBanner(); renderKpis(); renderAI();
+  const dcs = (S.stream && S.stream.dcs_telemetry) || null;
+  setHTML($('#ov-sensors'), !S.stream ? '<div class="skeleton" style="height:90px"></div>' : dcs && Object.keys(dcs).length ? Object.entries(dcs).map(([t, v]) => sensorMini(sensorModel(t, v))).join('') : '<div class="empty">The feed returned no sensors.</div>');
+  const ev = latestEvent();
+  $('#ov-sub').textContent = `${ev ? ev.unit_name : 'No plant yet'} · ${(cf().cloud_run || {}).region || 'asia-southeast1'} · ${S.stream ? `data updated ${ago(S.lastOk)}` : 'loading'} · simulated plant feed`;
+  setHTML($('#ov-events'), eventsTable(events().slice(0, 5), false));
+}
+function eventsTable(list, expandable) {
+  if (!S.stream) return `<div class="empty"><span class="spinner"></span></div>`;
+  if (!list.length) return `<div class="empty">No events match.</div>`;
+  const rows = list.map(ev => {
+    const n = (ev.conflicts || []).length, crit = (ev.conflicts || []).some(c => c.severity === 'CRITICAL');
+    const open = S.openRows.has(ev.id);
+    return `<tr class="row"><td class="mono small" style="white-space:nowrap">${esc(dateTime(ev.timestamp))}</td>
+      <td class="mono small">${expandable ? `<button class="rowbtn" data-row="${esc(ev.id)}" aria-expanded="${open}">${ic(open ? 'chevron-down' : 'chevron-right', 'i--sm')}${esc(ev.id)}</button>` : esc(ev.id)}${isBaseline(ev) ? ' ' + chip('neutral', 'baseline example') : ''}</td>
+      <td>${esc(ev.unit_name)} <span class="muted small">· ${esc(ev.shift_name)}</span></td>
+      <td>${ev.sync_status === 'ACKNOWLEDGED' ? chip('warn', 'Acknowledged', 'circle-alert') : crit ? chip('critical', 'Conflict', 'triangle-alert') : n ? chip('warn', 'Warning', 'circle-alert') : chip('ok', 'Clean', 'circle-check')}</td>
+      <td>${n}</td><td class="cell-ellipsis muted">${esc(plain((ev.brief && ev.brief.headline) || ev.summary || ''))}</td></tr>` +
+      (open ? `<tr class="detail"><td colspan="6"><div class="jsonbox">${esc(JSON.stringify(ev, null, 2))}</div></td></tr>` : '');
+  }).join('');
+  return `<table class="table"><thead><tr><th>Time</th><th>Event</th><th>Unit · shift</th><th>Status</th><th>Conflicts</th><th>Summary</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
 
-    // ----------------------------------------------------
-    // LIGHT / DARK MODE TOGGLE
-    // ----------------------------------------------------
-    function toggleTheme() {
-      const html = document.documentElement;
-      const body = document.body;
-      if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        body.classList.remove('dark');
-        body.classList.add('light');
-        localStorage.setItem('baton_theme', 'light');
-      } else {
-        html.classList.add('dark');
-        body.classList.remove('light');
-        body.classList.add('dark');
-        localStorage.setItem('baton_theme', 'dark');
-      }
-      refreshIcons();
+// ---------------------------------------------------------------- telemetry
+function renderTelemetry() {
+  const dcs = (S.stream && S.stream.dcs_telemetry) || {};
+  $('#tel-sub').textContent = S.stream ? `Simulated plant feed · ${Object.keys(dcs).length} sensors · checked ${ago(S.lastOk)}` : 'Loading…';
+  $$('#sensor-filters .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.f === S.sensorFilter));
+  if (!S.stream) { setHTML($('#sensor-grid'), [1, 2, 3, 4].map(() => `<div class="card sensor"><div class="skeleton" style="height:14px"></div><div class="skeleton" style="height:28px"></div></div>`).join('')); return; }
+  const list = Object.entries(dcs).map(([t, v]) => sensorModel(t, v)).filter(m => S.sensorFilter === 'all' || (S.sensorFilter === 'normal' ? m.sev === 'normal' : m.sev === S.sensorFilter));
+  setHTML($('#sensor-grid'), list.length ? list.map(m => `<article class="card sensor sensor--${m.sev}"><div class="sensor__top"><span class="sensor__id">${esc(m.tag)}</span>${m.sev === 'critical' ? chip('critical', 'Critical', 'triangle-alert') : m.sev === 'warn' ? chip('warn', m.stateText === 'BYPASS' ? 'Bypassed' : 'Attention', 'circle-alert') : chip('ok', 'Normal', 'circle-check')}</div>
+    <div><span class="sensor__value">${esc(m.value)}</span><span class="sensor__unit">${esc(m.unit)}</span></div>
+    <div class="sensor__meta"><span>State: <b>${esc(m.stateText)}</b></span>${m.extra.map(x => `<span>${esc(x)}</span>`).join('')}<span>Simulated feed · checked ${esc(ago(S.lastOk))}</span></div>
+    ${m.linked.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${m.linked.map(i => sevChip(i.c.severity, `${i.c.rule_id} open`)).join('')}</div>` : ''}</article>`).join('') : `<div class="card empty" style="grid-column:1/-1">No sensors match this filter.</div>`);
+  const permits = S.stream.active_permits || [];
+  setHTML($('#permit-table'), permits.length ? `<table class="table"><thead><tr><th>Permit</th><th>Type</th><th>Title</th><th>Status</th></tr></thead><tbody>${permits.map(p => `<tr class="row"><td class="mono">${esc(p.id)}</td><td>${esc(p.type)}</td><td>${esc(p.title)}</td><td>${p.expired || String(p.status).toUpperCase() === 'EXPIRED' ? chip('warn', 'Expired', 'circle-alert') : chip('ok', esc(p.status), 'circle-check')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No permits in the feed.</div>');
+}
+
+// ---------------------------------------------------------------- audit trail
+function renderAudit() {
+  $$('#audit-tabs .tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === S.auditTab));
+  const q = S.auditQuery.toLowerCase(), el = $('#audit-body');
+  if (!S.stream) { setHTML(el, `<div class="empty"><span class="spinner"></span></div>`); return; }
+  const match = o => !q || JSON.stringify(o).toLowerCase().includes(q);
+  if (S.auditTab === 'events') { setHTML(el, eventsTable(events().filter(match), true)); }
+  else if (S.auditTab === 'incidents') {
+    // One row per distinct conflict (rule + title): the same conflict reported by many syncs is one incident
+    // with a report count. The newest report decides the status; events are newest first.
+    const groups = new Map();
+    for (const ev of events()) for (const c of (ev.conflicts || [])) {
+      const k = `${c.rule_id}|${c.title}`;
+      if (!groups.has(k)) groups.set(k, { ev, c, n: 1, first: ev }); else { const g = groups.get(k); g.n++; g.first = ev; }
     }
+    const f = [...groups.values()].filter(g => match([g.c, g.ev.id]));
+    setHTML(el, f.length ? `<table class="table"><thead><tr><th>Latest report</th><th>Rule</th><th>Severity</th><th>Incident</th><th>Status</th><th>Reports</th><th>Latest event</th></tr></thead><tbody>${f.map(({ ev, c, n, first }) => `<tr class="row"><td class="mono small">${esc(dateTime(ev.timestamp))}</td><td class="mono">${esc(c.rule_id)}</td><td>${sevChip(c.severity)}</td><td>${esc(c.title)}<div class="muted small">${esc(c.description)}</div></td><td>${isAcked(c) ? chip('warn', 'Acknowledged', 'circle-alert') : unresolved(c) ? chip('critical', 'Open', 'triangle-alert') : chip('ok', 'Resolved', 'circle-check')}</td><td class="mono">${n}${n > 1 ? `<div class="muted small">since ${esc(dateTime(first.timestamp))}</div>` : ''}</td><td class="mono small">${esc(ev.id)}${isBaseline(ev) ? ' ' + chip('neutral', 'baseline example') : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No incidents recorded.</div>');
+  } else if (S.auditTab === 'syncs') {
+    const f = syncLogs().filter(match);
+    setHTML(el, f.length ? `<table class="table"><thead><tr><th>Time</th><th>Request</th><th>Status</th><th>Latency</th><th>Detail</th></tr></thead><tbody>${f.map(l => `<tr class="row"><td class="mono small">${esc(dateTime(l.timestamp))}</td><td class="mono small">${esc(l.method)} ${esc(l.path)}</td><td>${l.status >= 400 ? chip('critical', 'HTTP ' + l.status, 'triangle-alert') : chip('ok', 'HTTP ' + l.status, 'circle-check')}</td><td class="mono">${esc(fmtMs(parseLatency(l.latency)))}</td><td class="muted">${esc(l.summary)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No batch synchronizations in the request log yet.</div>');
+  } else {
+    const f = cf(), v = f.vertex_ai || {}, fs = f.firestore || {}, cr = f.cloud_run || {}, pl = f.pipeline || {};
+    const row = (k, val) => val == null || val === '' ? '' : `<tr class="row"><td class="muted" style="width:260px">${esc(k)}</td><td class="mono">${esc(val)}</td></tr>`;
+    setHTML(el, `<table class="table"><tbody>${row('Audit persistence', fs.status)}${row('Firestore database', fs.database)}${row('Firestore location', fs.location)}${row('Ledger entries', fs.ledger_count)}${row('Gateway service', cr.service)}${row('Gateway region', cr.region)}${row('Active revision', cr.active_revision)}${row('Main model', v.model)}${row('Main model location', v.location)}${row('Fast model', v.fast_model)}${row('Fast model location', v.fast_location)}${row('Embedding model', v.embedding_model)}${row('Audio engine', v.audio_engine)}${row('Brief source', pl.brief_source)}${row('Pipeline topic', pl.topic)}${row('Agent worker', pl.worker)}${row('Rules', ((f.safety_engine || {}).rules || []).join(' · '))}</tbody></table>`);
+  }
+  $('#audit-sub').textContent = { events: 'Batch synchronizations from edge devices', incidents: 'Distinct rule conflicts in the feed, with how many syncs reported each', syncs: 'Real /batch_sync requests from the request log', service: 'What is persisted and which revision and models are active' }[S.auditTab];
+}
 
-    // Initialize Theme
-    const savedTheme = localStorage.getItem('baton_theme');
-    if (savedTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
-      document.body.classList.add('light');
-    }
+// ---------------------------------------------------------------- debug console
+function renderDebug() {
+  if (!S.stream) { setHTML($('#debug-endpoints'), `<div class="empty"><span class="spinner"></span></div>`); setHTML($('#debug-logs'), ''); return; }
+  const logs = S.stream.cloud_logs || [], groups = new Map();
+  const norm = p => String(p || '').split('?')[0].replace(/\/agents\/(runs|chunks)\/[^/]+/, '/agents/$1/{id}').replace(/\/devices\/[^/]+\//, '/devices/{id}/');   // one row per endpoint, not per id
+  for (const l of logs) { const k = `${l.method || ''} ${norm(l.path || l.url)}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(l); }
+  const pm = S.pollMs.length ? median(S.pollMs) : null;
+  const rows = [`<tr class="row"><td class="mono">GET /api/v1/health</td><td>${S.health ? (S.health.ok ? chip('ok', 'HTTP 200', 'circle-check') : chip('critical', 'Unreachable', 'triangle-alert')) : chip('neutral', 'probing…')}</td><td class="mono">${S.health ? fmtMs(S.health.ms) : '–'}</td><td class="muted">Probed from this browser every 10 s</td></tr>`,
+    `<tr class="row"><td class="mono">GET /api/v1/dashboard/stream</td><td>${connected() ? chip('ok', 'HTTP 200', 'circle-check') : chip('critical', 'Failing', 'triangle-alert')}</td><td class="mono">${fmtMs(pm)}</td><td class="muted">This page's own poll (median of last ${S.pollMs.length})</td></tr>`];
+  for (const [k, list] of groups) {
+    const last = list[0], lat = list.map(l => parseLatency(l.latency)).filter(v => v != null), bad = list.some(l => l.status >= 400);
+    rows.push(`<tr class="row"><td class="mono">${esc(k)}</td><td>${last.status >= 400 ? chip('critical', 'HTTP ' + last.status, 'triangle-alert') : chip('ok', 'HTTP ' + last.status, 'circle-check')}${bad ? ' ' + chip('warn', 'errors in window') : ''}</td><td class="mono">${fmtMs(median(lat))}</td><td class="muted">${list.length} recent request(s), last ${esc(ago(last.timestamp))}</td></tr>`);
+  }
+  setHTML($('#debug-endpoints'), `<table class="table"><thead><tr><th>Endpoint</th><th>Last status</th><th>Latency (median)</th><th>Notes</th></tr></thead><tbody>${rows.join('')}</tbody></table>`);
+  $$('#log-filters .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.f === S.logFilter));
+  const f = logs.filter(l => S.logFilter === 'ALL' || l.category === S.logFilter);
+  setHTML($('#debug-logs'), f.length ? `<table class="table"><thead><tr><th>Time</th><th>Request</th><th>Status</th><th>Latency</th><th>Summary</th></tr></thead><tbody>${f.map((l, i) => {
+    const key = 'log-' + (l.id || i), open = S.openRows.has(key), j = JSON.stringify(l, null, 2);
+    return `<tr class="row"><td class="mono small" style="white-space:nowrap">${esc(clock(l.timestamp))}</td><td class="mono small"><button class="rowbtn" data-row="${esc(key)}" aria-expanded="${open}">${ic(open ? 'chevron-down' : 'chevron-right', 'i--sm')}${esc(l.method)} ${esc(l.path || l.url)}</button></td><td>${l.status >= 400 ? chip('critical', 'HTTP ' + l.status, 'triangle-alert') : chip('ok', 'HTTP ' + l.status, 'circle-check')}</td><td class="mono">${esc(fmtMs(parseLatency(l.latency)))}</td><td class="cell-ellipsis muted">${esc(l.summary)}</td></tr>` +
+      (open ? `<tr class="detail"><td colspan="5"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="label">Request payload</span><button class="btn btn--ghost" data-copy="${encodeURIComponent(j)}">${ic('copy', 'i--sm')}Copy JSON</button></div><div class="jsonbox">${esc(j)}</div></td></tr>` : '');
+  }).join('')}</tbody></table>` : '<div class="empty">No requests match this filter.</div>');
+}
 
-    // ----------------------------------------------------
-    // SVG DATA PACKET ANIMATION MECHANICS
-    // ----------------------------------------------------
-    function animatePacket(pathId, color = '#38bdf8', duration = 1200, onComplete = null) {
-      const path = document.getElementById(pathId);
-      const layer = document.getElementById('dynamic-packets-layer');
-      if (!path || !layer) return;
+// ---------------------------------------------------------------- topology (wires computed from real node positions)
+const NODES = [
+  { id: 'edge', grid: '2 / 1', icon: 'smartphone', name: 'Edge Mobile', role: 'Android · Flutter · LiteRT' },
+  { id: 'gateway', grid: '2 / 2', icon: 'server', name: 'Gateway', role: 'Cloud Run · baton-api' },
+  { id: 'safety', grid: '1 / 3', icon: 'shield-check', name: 'Safety Engine', role: 'Rules R1–R4 · interlock check' },
+  { id: 'pubsub', grid: '2 / 3', icon: 'radio', name: 'Pub/Sub', role: 'handover events queue' },
+  { id: 'hub', grid: '2 / 4', icon: 'workflow', name: 'Agent Hub', role: 'baton-agents · ADK · Vertex AI' },
+  { id: 'vectors', grid: '1 / 5', icon: 'search', name: 'Vector Store', role: 'Firestore vector search' },
+  { id: 'firestore', grid: '3 / 5', icon: 'database', name: 'Cloud Firestore', role: 'Audit ledger · briefs · traces' },
+];
+const WIRES = [
+  { id: 'edge-gw', from: ['edge', 'right', .5], to: ['gateway', 'left', .5] },
+  { id: 'gw-safety', from: ['gateway', 'right', .25], to: ['safety', 'left', .5] },
+  { id: 'gw-pubsub', from: ['gateway', 'right', .5], to: ['pubsub', 'left', .5] },
+  { id: 'gw-fs', from: ['gateway', 'bottom', .5], to: ['firestore', 'left', .5] },
+  { id: 'pubsub-hub', from: ['pubsub', 'right', .5], to: ['hub', 'left', .5] },
+  { id: 'hub-safety', from: ['hub', 'top', .25], to: ['safety', 'right', .5] },
+  { id: 'hub-vectors', from: ['hub', 'right', .25], to: ['vectors', 'left', .5] },
+  { id: 'hub-fs', from: ['hub', 'right', .75], to: ['firestore', 'left', .5] },
+];
+const STAGES = ['Intake', 'SOPRetriever', 'HistoryRetriever', 'RulesGate', 'SafetyCrossCheck', 'Briefing', 'Distill'];
+const stageState = {};
+function runHealthKind() {         // pipeline wire state from the latest known run or brief
+  const st = S.agentsStatus || (latestEvent() && latestEvent().brief ? ({ passed: 'completed', modified: 'completed', fallback: 'fallback' }[latestEvent().brief.guardrail_status]) : null);
+  return { running: 'active', completed: 'healthy', fallback: 'degraded', failed: 'blocked' }[st] || 'idle';
+}
+function wireState(id) {
+  const st = safetyState(), fs = cf().firestore || {}, ev = latestEvent();
+  const synced = ev && Date.now() - new Date(ev.timestamp).getTime() < 24 * 3600e3;
+  switch (id) {
+    case 'edge-gw': return !S.stream ? 'idle' : synced ? 'healthy' : 'idle';
+    case 'gw-safety': return st.kind === 'critical' ? 'blocked' : st.kind === 'critical-ack' || st.kind === 'warning' ? 'degraded' : S.stream ? 'healthy' : 'idle';
+    case 'gw-pubsub': return S.stream && (cf().pipeline || {}).brief_source === 'adk-pipeline' ? 'healthy' : 'idle';
+    case 'gw-fs': return fs.status === 'persisted' ? 'healthy' : fs.status ? 'degraded' : 'idle';
+    default: return runHealthKind();
+  }
+}
+function nodeLive(id) {
+  const f = cf(), v = f.vertex_ai || {}, fs = f.firestore || {}, cr = f.cloud_run || {}, ev = latestEvent(), st = safetyState();
+  const lat = syncLogs().map(l => parseLatency(l.latency)).filter(x => x != null);
+  const M = (k, val) => `<span>${esc(k)} <b>${esc(val ?? '–')}</b></span>`;
+  switch (id) {
+    case 'edge': return { chip: ev ? (Date.now() - new Date(ev.timestamp) < 24 * 3600e3 ? chip('ok', 'Syncing', 'circle-check') : chip('neutral', 'No recent sync', 'clock')) : chip('neutral', 'No data', 'clock'), m: [M('last sync', ev ? ago(ev.timestamp) : '–'), M('syncs in feed', events().filter(e => !isBaseline(e)).length)] };
+    case 'gateway': return { chip: connected() ? chip('ok', 'Healthy', 'circle-check') : chip('critical', 'Unreachable', 'triangle-alert'), m: [M('revision', cr.active_revision || '–'), M('last sync', lat.length ? fmtMs(lat[0]) : '–')] };
+    case 'safety': return { chip: { critical: chip('critical', 'Critical', 'triangle-alert'), 'critical-ack': chip('warn', 'Acknowledged', 'circle-alert'), warning: chip('warn', 'Warning', 'circle-alert'), clear: chip('ok', 'Nominal', 'circle-check') }[st.kind], m: [M('unresolved', st.inc.length), M('top', st.top ? `${st.top.c.rule_id} ${st.top.c.severity.toLowerCase()}` : 'none')] };
+    case 'pubsub': return { chip: S.agentsStatus === 'running' ? chip('info', 'Delivering', 'clock') : chip('neutral', 'Standing by', 'clock'), m: [M('topic', (f.pipeline || {}).topic || '–'), M('delivery', 'OIDC push')] };
+    case 'hub': { const s = S.agentsStatus; const dots = `<span class="dots" role="img" aria-label="Pipeline stages">${STAGES.map(n => `<i class="${stageState[n] || ''}" title="${n}"></i>`).join('')}</span>`;
+      return { chip: s ? runChip(s) : chip('neutral', 'Idle', 'clock'), m: [M('main', v.model), M('fast', v.fast_model)], extra: dots }; }
+    case 'vectors': return { chip: chip('info', 'Cosine search', 'search'), m: [M('embedding', v.embedding_model), M('store', 'knowledge_chunks')] };
+    case 'firestore': return { chip: fs.status === 'persisted' ? chip('ok', 'Persisted', 'circle-check') : chip('warn', 'In memory', 'circle-alert'), m: [M('ledger', fs.ledger_count != null ? fs.ledger_count + ' entries' : '–'), M('region', fs.location)] };
+  }
+}
+function renderNodes() {
+  const g = $('#topo-grid'); if (!g) return;
+  if (!g.__built) {
+    g.innerHTML = `<div class="topo__keycard" style="grid-area:1 / 1 / 2 / 3;align-self:start"><div class="notice">${ic('info')}<div>Plant readings in this system are a <b>simulated feed</b>. Agent steps animate only after you unlock the supervisor key; sync events animate always.</div></div></div>` +
+      NODES.map(n => `<button class="node" id="node-${n.id}" data-node="${n.id}" style="grid-area:${n.grid}" aria-pressed="false"><span class="node__head"><span class="node__icon">${ic(n.icon, 'i--lg')}</span><span class="node__name">${esc(n.name)}<span class="node__role">${esc(n.role)}</span></span></span><span class="node__live" data-live="${n.id}"></span></button>`).join('');
+    g.__built = true;
+  }
+  for (const n of NODES) {
+    const live = nodeLive(n.id), el = $(`[data-live="${n.id}"]`, g);
+    setHTML(el, `<span style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">${live.chip}${live.extra || ''}</span><span class="node__metrics">${live.m.join('')}</span>`);
+    $(`#node-${n.id}`).setAttribute('aria-pressed', S.selectedNode === n.id);
+  }
+  layoutWires();
+}
+const SIDE = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] };
+function wirePoint(id, side, t, sr) {
+  const el = $('#node-' + id); if (!el) return null;
+  const r = el.getBoundingClientRect(); let x, y;
+  if (side === 'right') { x = r.right; y = r.top + r.height * t; } else if (side === 'left') { x = r.left; y = r.top + r.height * t; }
+  else if (side === 'top') { x = r.left + r.width * t; y = r.top; } else { x = r.left + r.width * t; y = r.bottom; }
+  return { x: x - sr.left, y: y - sr.top, n: SIDE[side] };
+}
+function layoutWires() {
+  const stage = $('#topo-stage'), svg = $('#topo-svg');
+  if (!stage || !svg || getComputedStyle(svg).display === 'none' || S.route !== 'architecture') return;
+  const sr = stage.getBoundingClientRect(); if (sr.width < 50) return;
+  svg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
+  const layer = $('#wires');
+  for (const w of WIRES) {                     // update the existing elements in place: replacing them would detach a wire that is mid-animation
+    const a = wirePoint(w.from[0], w.from[1], w.from[2], sr), b = wirePoint(w.to[0], w.to[1], w.to[2], sr); if (!a || !b) continue;
+    const k = Math.max(36, Math.hypot(b.x - a.x, b.y - a.y) * 0.35), state = wireState(w.id);
+    let path = document.getElementById('wire-' + w.id);
+    if (!path) { path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.id = 'wire-' + w.id; layer.appendChild(path); }
+    path.setAttribute('d', `M ${a.x} ${a.y} C ${a.x + a.n[0] * k} ${a.y + a.n[1] * k}, ${b.x + b.n[0] * k} ${b.y + b.n[1] * k}, ${b.x} ${b.y}`);
+    if (path.dataset.anim !== '1') applyWireState(path, state);          // a travelling packet owns the wire's look until it arrives
+  }
+}
+function applyWireState(path, state) { path.setAttribute('class', `wire wire--${state}`); path.setAttribute('marker-end', `url(#ar-${state})`); }
+function flash(nodeId, critical) {
+  const el = $('#node-' + nodeId); if (!el || reduceMotion) return;
+  el.classList.remove('node--flash', 'node--flash-critical'); void el.offsetWidth; el.classList.add(critical ? 'node--flash-critical' : 'node--flash');
+}
+function animateWire(id, duration = 700, reverse = false) {
+  return new Promise(resolve => {
+    const path = $('#wire-' + id), layer = $('#packets');
+    if (!path || !layer) { resolve(); return; }
+    path.dataset.anim = '1'; applyWireState(path, 'active');
+    const restore = () => { delete path.dataset.anim; applyWireState(path, wireState(id)); resolve(); };
+    if (reduceMotion) { setTimeout(restore, 500); return; }          // no travelling dot: the wire just highlights briefly
+    const len = path.getTotalLength(); if (!len) { restore(); return; }
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('r', '5'); c.setAttribute('class', 'packet'); layer.appendChild(c);
+    const t0 = performance.now();
+    (function step(now) {
+      const p = Math.min((now - t0) / duration, 1), e = 1 - Math.pow(1 - p, 3), pt = path.getPointAtLength((reverse ? 1 - e : e) * len);
+      c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+      if (p < 1) requestAnimationFrame(step); else { c.remove(); restore(); }
+    })(t0);
+  });
+}
+function playSyncFlow(ev) {          // a real new sync arrived in the stream
+  const crit = (ev.conflicts || []).some(c => c.severity === 'CRITICAL');
+  flash('edge'); animateWire('edge-gw', 650).then(() => {
+    flash('gateway');
+    animateWire('gw-safety', 650).then(() => flash('safety', crit));
+    animateWire('gw-pubsub', 650).then(() => flash('pubsub'));
+    animateWire('gw-fs', 800).then(() => flash('firestore'));
+  });
+}
+const stepQueue = []; let stepBusy = false;
+function enqueueStep(step, run) { stepQueue.push({ step, run }); if (stepQueue.length > 40) stepQueue.shift(); if (!stepBusy) drain(); }
+async function drain() { stepBusy = true; while (stepQueue.length) { const it = stepQueue.shift(); await playStep(it.step, it.run); } stepBusy = false; }
+const baseAgent = a => (a || '').replace(/Llm$/, '');
+function setStage(name, st) { if (STAGES.includes(name)) { stageState[name] = st; if (S.route === 'architecture') renderNodes(); } }
+async function playStep(step, run) {
+  const agent = baseAgent(step.agent), tool = step.tool_name || '', kind = step.kind; let p = null;
+  if (run.trigger === 'ask') {        // Ask runs inside the gateway: highlight what it touches, no packets
+    if (kind === 'agent_start' && agent === 'Ask') flash('gateway');
+    if (kind === 'model_output') flash('hub');
+    if (kind === 'tool_result' && /search_/.test(tool)) flash('vectors');
+    return;
+  }
+  if (kind === 'agent_start') setStage(agent, 'run'); if (kind === 'agent_end') setStage(agent, stageState[agent] === 'fb' ? 'fb' : 'done');
+  if (kind === 'agent_start' && agent === 'Intake') { STAGES.forEach(n => stageState[n] = ''); stageState.Intake = 'run'; S.agentsStatus = 'running'; p = animateWire('pubsub-hub', 600); flash('pubsub'); p.then(() => flash('hub')); }
+  else if (kind === 'tool_result' && agent === 'Intake') { animateWire('hub-vectors', 600); p = animateWire('hub-fs', 700); }
+  else if (kind === 'tool_call' && /search_/.test(tool)) p = animateWire('hub-vectors', 600);
+  else if (kind === 'tool_result' && /search_/.test(tool)) { flash('vectors'); p = animateWire('hub-vectors', 600, true); }
+  else if (kind === 'tool_call' && (tool === 'evaluate_rules' || tool === 'get_scada')) p = animateWire('hub-safety', 600);
+  else if (kind === 'tool_result' && (tool === 'evaluate_rules' || tool === 'get_scada')) { flash('safety', (step.rule_ids || []).some(r => r === 'R1' || r === 'R2')); p = animateWire('hub-safety', 600, true); }
+  else if (kind === 'tool_result' && tool === 'get_open_conflicts') p = animateWire('hub-fs', 600);
+  else if (kind === 'model_output') flash('hub');
+  else if (kind === 'guardrail') { flash('hub', true); setStage(agent, 'fb'); }
+  else if (kind === 'tool_result' && agent === 'Distill') { p = animateWire('hub-fs', 700); flash('firestore'); }
+  await sleep(p ? 240 : 40);
+}
 
-      const pathLength = path.getTotalLength();
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('r', '5.5');
-      circle.setAttribute('fill', color);
-      circle.setAttribute('class', 'traveling-packet');
-      circle.setAttribute('filter', `drop-shadow(0 0 6px ${color})`);
-      layer.appendChild(circle);
+// ---------------------------------------------------------------- inspector
+function renderInspector() {
+  const el = $('#inspector'), id = S.selectedNode;
+  if (!id) { setHTML(el, `<div class="sect sect--solo"><h2 class="card__title">${ic('info')}Component inspector</h2><p class="muted small" style="margin-top:6px">Select a component in the topology to see its live state, configuration and recent activity.</p></div>`); return; }
+  const n = NODES.find(x => x.id === id), live = nodeLive(id), f = cf(), v = f.vertex_ai || {}, fs = f.firestore || {}, cr = f.cloud_run || {}, pl = f.pipeline || {};
+  const dl = rows => `<dl>${rows.filter(r => r[1] != null && r[1] !== '').map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`;
+  let sections = '';
+  if (id === 'edge') { const devs = [...new Set(events().filter(e => !isBaseline(e)).map(e => e.device_id))]; sections = dl([['Client', (f.edge || {}).client_ua], ['Devices seen', devs.join(', ') || null], ['Last sync', latestEvent() ? dateTime(latestEvent().timestamp) : null]]) + `<p class="muted small" style="margin-top:10px">Capsules are extracted on the device and synced when connectivity returns.</p>`; }
+  else if (id === 'gateway') sections = dl([['Service', cr.service], ['Region', cr.region], ['Revision', cr.active_revision], ['Brief source', pl.brief_source]]) + `<div class="label" style="margin:12px 0 6px">Recent syncs</div>` + (syncLogs().slice(0, 4).map(l => `<div class="small" style="display:flex;justify-content:space-between;gap:8px;padding:3px 0"><span>${esc(clock(l.timestamp))} · HTTP ${esc(l.status)}</span><span class="mono">${esc(fmtMs(parseLatency(l.latency)))}</span></div>`).join('') || '<span class="muted small">No syncs in the request log.</span>');
+  else if (id === 'safety') { const st = safetyState(); sections = dl([['Rules', ((f.safety_engine || {}).rules || []).join(' · ')], ['Unresolved incidents', st.inc.length]]) + (st.inc.length ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${st.inc.slice(0, 5).map(i => `<div class="small">${sevChip(i.c.severity, i.c.rule_id)} ${esc(i.c.title)} ${isAcked(i.c) ? chip('warn', 'acknowledged') : ''}</div>`).join('')}</div><button class="btn btn--primary" style="margin-top:12px" data-action="review">Review conflict</button>` : '<p class="muted small" style="margin-top:10px">No unresolved conflicts.</p>'); }
+  else if (id === 'pubsub') sections = dl([['Topic', pl.topic], ['Delivery', 'Push to baton-agents']]) + `<p class="muted small" style="margin-top:10px">Each sync publishes ids only (never transcripts). Redeliveries are made harmless by an idempotent run record.</p>`;
+  else if (id === 'hub') {
+    const r = S.runs[0];
+    sections = dl([['Worker', pl.worker], ['Main model', v.model], ['Main location', v.location], ['Fast model', v.fast_model], ['Fast location', v.fast_location]]) + `<div class="label" style="margin:12px 0 6px">Pipeline stages</div><div style="display:flex;gap:6px;flex-wrap:wrap">${STAGES.map(s => chip(stageState[s] === 'done' ? 'ok' : stageState[s] === 'fb' ? 'warn' : stageState[s] === 'run' ? 'info' : 'neutral', s)).join('')}</div>` +
+      (getKey() ? (r ? `<div class="label" style="margin:12px 0 6px">Latest run</div><div class="small">${runChip(r.status)} ${esc(fmtMs(r.total_ms))} · ${esc(r.trigger)}</div><button class="btn" style="margin-top:10px" data-open-run="${esc(r.run_id)}">Open trace</button>` : '<p class="muted small" style="margin-top:10px">No runs recorded yet.</p>') : `<p class="muted small" style="margin-top:10px">Unlock the supervisor key to see run details.</p>`);
+  }
+  else if (id === 'vectors') sections = dl([['Embedding model', v.embedding_model], ['Collection', 'knowledge_chunks'], ['Distance', 'cosine']]) + `<p class="muted small" style="margin-top:10px">Holds SOPs, bulletins, manuals and past handovers. Agents search it by meaning, in any language.</p>`;
+  else if (id === 'firestore') sections = dl([['Status', fs.status], ['Database', fs.database], ['Location', fs.location], ['Ledger entries', fs.ledger_count]]) + `<p class="muted small" style="margin-top:10px">Stores the audit ledger, agent briefs, run traces and device updates.</p>`;
+  setHTML(el, `<div class="sect" style="display:flex;gap:10px;align-items:center"><span class="node__icon" style="background:var(--blue-soft);color:var(--blue)">${ic(n.icon, 'i--lg')}</span><div style="flex:1"><h2 class="card__title">${esc(n.name)}</h2><div class="muted small">${esc(n.role)}</div></div>${live.chip}</div><div class="sect">${sections}</div>`);
+}
 
-      const startTime = performance.now();
-
-      function step(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-        const point = path.getPointAtLength(ease * pathLength);
-
-        circle.setAttribute('cx', point.x);
-        circle.setAttribute('cy', point.y);
-
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          layer.removeChild(circle);
-          if (onComplete) onComplete();
-        }
-      }
-
-      requestAnimationFrame(step);
-    }
-
-    function triggerFullTopologyFlow(type = 'NOMINAL') {
-      const isConflict = (type === 'CONFLICT');
-      const primaryColor = isConflict ? '#ef4444' : '#10b981';
-
-      flashNode('node-edge', 'node-pulse-blue');
-
-      animatePacket('path-a-to-b', '#38bdf8', 750, () => {
-        flashNode('node-gateway', 'node-pulse-blue');
-
-        // Branch to Node C (Safety Engine)
-        animatePacket('path-b-to-c', primaryColor, 750, () => {
-          flashNode('node-safety', isConflict ? 'node-pulse-red' : 'node-pulse-green');
-          updateSafetyNodeUI(isConflict);
-        });
-
-        // Branch to Node D (Vertex AI)
-        animatePacket('path-b-to-d', '#f59e0b', 800, () => {
-          flashNode('node-vertex', 'node-pulse-amber');
-        });
-
-        // Branch to Node E (Firestore Ledger)
-        animatePacket('path-b-to-e', '#a855f7', 850, () => {
-          flashNode('node-firestore', 'node-pulse-blue');
-        });
-      });
-    }
-
-    function flashNode(nodeId, pulseClass, duration = 1600) {
-      const el = document.getElementById(nodeId);
-      if (!el) return;
-      el.classList.add(pulseClass);
-      setTimeout(() => el.classList.remove(pulseClass), duration);
-    }
-
-    function updateSafetyNodeUI(isConflict) {
-      const statusEl = document.getElementById('node-c-status');
-      const cardEl = document.getElementById('node-safety');
-      const alertBanner = document.getElementById('dismissible-alert-banner');
-
-      if (isConflict) {
-        if (statusEl) {
-          statusEl.textContent = 'CRITICAL (R1)';
-          statusEl.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30';
-        }
-        if (cardEl) cardEl.className = 'pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-red-500/60 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-red-400';
-        if (alertBanner) {
-          alertBanner.classList.remove('hidden');
-          alertBanner.style.opacity = '1';
-          alertBanner.style.transform = 'scale(1)';
-        }
-        const gatePill = document.getElementById('arch-stat-state');
-        if (gatePill) gatePill.textContent = 'CRITICAL GATE';
-      } else {
-        if (statusEl) {
-          statusEl.textContent = 'NOMINAL (0 CONFLICTS)';
-          statusEl.className = 'px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-        }
-        if (cardEl) cardEl.className = 'pointer-events-auto w-full max-w-[340px] bg-slate-900/90 border border-emerald-500/60 rounded-2xl p-3.5 shadow-xl transition-all duration-300 hover:border-emerald-400';
-        if (alertBanner) {
-          alertBanner.style.opacity = '0';
-          alertBanner.style.transform = 'scale(0.98)';
-          setTimeout(() => alertBanner.classList.add('hidden'), 300);
-        }
-        const gatePill = document.getElementById('arch-stat-state');
-        if (gatePill) gatePill.textContent = 'NOMINAL (CLEAR)';
-      }
-    }
-
-    // ----------------------------------------------------
-    // DISMISSIBLE SAFETY GATE ALERT: ACKNOWLEDGE & CLEAR
-    // ----------------------------------------------------
-    async function clearActiveAlert() {
-      const btn = document.getElementById('btn-acknowledge-clear');
-      if (btn) btn.innerHTML = `<span class="animate-spin inline-block mr-1">⌛</span> Clearing...`;
-
-      try {
-        const resp = await fetch('/api/v1/dashboard/clear_alert', { method: 'POST' });
-        const data = await resp.json();
-      } catch (err) {
-        console.warn("clear_alert network call (local mock applied):", err);
-      }
-
-      // Animate alert banner out
-      const alertBanner = document.getElementById('dismissible-alert-banner');
-      if (alertBanner) {
-        alertBanner.style.opacity = '0';
-        alertBanner.style.transform = 'scale(0.96)';
-        setTimeout(() => alertBanner.classList.add('hidden'), 300);
-      }
-
-      // Transition Node C back to Nominal Monitored
-      updateSafetyNodeUI(false);
-
-      const briefStatus = document.getElementById('brief-protocol-status');
-      if (briefStatus) {
-        briefStatus.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Transfer Authorized`;
-        briefStatus.className = "text-emerald-400 font-semibold flex items-center gap-1";
-      }
-
-      refreshIcons();
-    }
-
-    // ----------------------------------------------------
-    // SIMULATION BUTTON HANDLERS
-    // ----------------------------------------------------
-    async function triggerSimulation(type) {
-      triggerFullTopologyFlow(type);
-
-      const payload = (type === 'CONFLICT') ? PAYLOAD_CONFLICT : PAYLOAD_NOMINAL;
-      try {
-        await fetch('/api/v1/handover/batch_sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        setTimeout(() => pollTelemetry(false), 500);
-      } catch (err) {
-        console.warn("Simulation post fallback:", err);
-      }
-    }
-
-    // ----------------------------------------------------
-    // REAL-TIME TELEMETRY POLLING (/api/v1/dashboard/stream)
-    // ----------------------------------------------------
-    async function pollTelemetry(isManual = false) {
-      if (isPolling) return;
-      isPolling = true;
-
-      const refreshIcon = document.getElementById('icon-refresh');
-      if (isManual && refreshIcon) refreshIcon.classList.add('animate-spin');
-
-      try {
-        const res = await fetch('/api/v1/dashboard/stream');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        renderDashboardData(data);
-      } catch (err) {
-        console.error("Telemetry stream error:", err);
-      } finally {
-        isPolling = false;
-        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-      }
-    }
-
-    // RENDER DATA TO UI
-    function renderDashboardData(data) {
-      const stats = data.stats || {};
-
-      // 1. Top Metrics in Architecture View
-      document.getElementById('arch-stat-asr').textContent = stats.total_transcriptions ?? 25;
-      document.getElementById('arch-stat-syncs').textContent = stats.total_syncs ?? 4;
-      
-      const firestoreCount = stats.firestore_ledger_count ?? 2;
-      document.getElementById('arch-ledger-count').textContent = `${firestoreCount} documents`;
-      const matrixFirestore = document.getElementById('matrix-firestore-count');
-      if (matrixFirestore) matrixFirestore.textContent = `${firestoreCount} entries`;
-
-      // 2. Debug Tab Filter Counts
-      document.getElementById('count-tab-all').textContent = stats.total_substantive ?? 31;
-      document.getElementById('count-tab-asr').textContent = stats.total_transcriptions ?? 25;
-      document.getElementById('count-tab-sync').textContent = stats.total_syncs ?? 4;
-      document.getElementById('count-tab-anom').textContent = stats.total_anomalies ?? 4;
-
-      // 3. Check for new incoming events
-      const events = data.events || [];
-      if (events.length > 0) {
-        const latestEvent = events[0];
-        if (lastKnownEventId && latestEvent.id !== lastKnownEventId) {
-          triggerFullTopologyFlow(latestEvent.has_critical_conflict ? 'CONFLICT' : 'NOMINAL');
-        }
-        lastKnownEventId = latestEvent.id;
-        
-        // Update Executive Brief
-        const briefEl = document.getElementById('executive-brief-text');
-        if (briefEl && latestEvent.summary) briefEl.textContent = latestEvent.summary;
-        const nodeDSummary = document.getElementById('node-d-summary');
-        if (nodeDSummary && latestEvent.summary) nodeDSummary.textContent = `"${latestEvent.summary}"`;
-
-        // Update alert banner state
-        if (latestEvent.has_critical_conflict) {
-          updateSafetyNodeUI(true);
-        }
-      }
-
-      // 4. Render Cleaned SCADA Plant Sensors (Zero undefined%)
-      renderCleanScadaSensors(data.dcs_telemetry);
-
-      // 5. Update Logs Cache and Render Debug Stream
-      cachedLogs = data.cloud_logs || [];
-      renderDebugLogFeed();
-
-      // 6. Update Timestamps
-      const nowStr = new Date().toLocaleTimeString();
-      document.getElementById('brief-timestamp').textContent = `Processed: ${nowStr}`;
-      document.getElementById('debug-last-updated-time').textContent = `Updated: ${nowStr}`;
-      refreshIcons();
-    }
-
-    // CLEAN SCADA SENSORS RENDER (Guarantees zero undefined%)
-    function renderCleanScadaSensors(dcs) {
-      const container = document.getElementById('scada-sensor-grid');
-      if (!container) return;
-
-      if (!dcs || Object.keys(dcs).length === 0) {
-        dcs = {
-          "P-201B": { status: "OPEN", pressure: 12.4, temp_c: 64.2 },
-          "V-102": { status: "CLOSED", pressure: 0.1, temp_c: 24.0 },
-          "ESDV-301": { status: "BYPASS", active: true },
-          "TK-501": { status: "ACTIVE", level_pct: 82.5 }
-        };
-      }
-
-      container.innerHTML = Object.entries(dcs).map(([tag, val]) => {
-        let reading = "NOMINAL";
-        if (val.pressure !== undefined && val.pressure !== null) {
-          reading = `${val.pressure} bar`;
-        } else if (val.level_pct !== undefined && val.level_pct !== null) {
-          reading = `${val.level_pct}% cap`;
-        } else if (val.flow_rate !== undefined && val.flow_rate !== null) {
-          reading = `${val.flow_rate} m³/h`;
-        } else if (val.temp_c !== undefined && val.temp_c !== null) {
-          reading = `${val.temp_c}°C`;
-        } else if (val.active !== undefined) {
-          reading = val.active ? "ENGAGED" : "OFF";
-        }
-
-        const isAlert = (val.status === 'OPEN' && tag === 'P-201B') || val.status === 'BYPASS';
-
-        return `
-          <div class="p-2.5 rounded-xl bg-slate-950/70 border ${isAlert ? 'border-amber-500/40' : 'border-slate-800'} text-left font-mono">
-            <div class="text-[10px] text-slate-400 flex justify-between">
-              <span class="font-bold">${tag}</span>
-              <span class="${isAlert ? 'text-amber-400 font-bold' : 'text-emerald-400'}">${val.status || 'OK'}</span>
-            </div>
-            <div class="text-xs ${isAlert ? 'text-amber-300 font-bold' : 'text-slate-200'} mt-1">
-              ${reading}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // LOG FILTER TAB TOGGLE
-    function setLogFilter(filter) {
-      currentLogFilter = filter;
-      ['ALL', 'TRANSCRIBE', 'BATCH_SYNC', 'ANOMALY'].forEach(f => {
-        const btn = document.getElementById(`tab-${f}`);
-        if (!btn) return;
-        if (f === filter) {
-          btn.className = "px-3 py-1 rounded-lg text-white bg-sky-600 font-medium transition-colors";
-        } else {
-          btn.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors";
-        }
-      });
-      renderDebugLogFeed();
-    }
-
-    // RENDER STRUCTURED LOG FEED WITH EXPANDABLE JSON DRAWER & COPY BUTTON
-    function renderDebugLogFeed() {
-      const container = document.getElementById('debug-logs-container');
-      if (!container) return;
-
-      let filtered = cachedLogs;
-      if (currentLogFilter !== 'ALL') {
-        filtered = cachedLogs.filter(l => l.category === currentLogFilter);
-      }
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="p-8 text-center text-xs text-slate-500 font-mono">
-            No entries matching filter "${currentLogFilter}".
-          </div>`;
+// ---------------------------------------------------------------- agent trace
+let runPollTimer = null, followRetries = 0;
+const seenSteps = new Map();
+function stopRunPolling() { clearTimeout(runPollTimer); runPollTimer = null; }
+async function refreshRunList(selectLatest) {
+  if (!getKey()) return;
+  try {
+    const r = await api('/api/v1/agents/runs?limit=20'); if (!r.ok) return;
+    S.runs = (await r.json()).runs || [];
+    const sel = $('#run-select');
+    sel.innerHTML = S.runs.map(x => `<option value="${esc(x.run_id)}">${esc(`${clock(x.started_at)} · ${x.trigger === 'ask' ? 'Ask' : 'Sync'} · ${x.status} · ${(x.run_id || '').replace(/^(run|ask)-/, '').slice(0, 12)}`)}</option>`).join('') || '<option value="">No runs yet</option>';
+    if (S.selectedRunId && S.runs.some(x => x.run_id === S.selectedRunId)) sel.value = S.selectedRunId;
+    else if (S.runs.length && (selectLatest || !S.selectedRunId)) selectRun(S.runs[0].run_id);
+    if (!S.agentsStatus && S.runs[0]) { S.agentsStatus = S.runs[0].status; renderNodes(); }
+  } catch (e) { /* locked or offline */ }
+}
+function selectRun(id, opts = {}) {
+  if (!id) return; S.selectedRunId = id;
+  const sel = $('#run-select'); if (sel && sel.value !== id) { if (![...sel.options].some(o => o.value === id)) sel.insertAdjacentHTML('afterbegin', `<option value="${esc(id)}">${esc(id)}</option>`); sel.value = id; }
+  loadRun(id, { follow: !!opts.follow, retries: opts.retries ?? 0 });
+}
+const terminal = r => ['completed', 'fallback', 'failed'].includes(r.status);
+async function loadRun(id, opts) {
+  stopRunPolling(); let d;
+  if (opts.follow && !opts.found) {      // the worker creates the run record a moment after the sync; look in the run list (always 200) instead of probing a run that does not exist yet
+    try {
+      const lr = await api('/api/v1/agents/runs?limit=5');
+      const known = lr.ok ? ((await lr.json()).runs || []).some(x => x.run_id === id) : false;
+      if (id !== S.selectedRunId) return;
+      if (!known) {
+        if (opts.retries > 0) runPollTimer = setTimeout(() => loadRun(id, { ...opts, retries: opts.retries - 1 }), 2000);
+        else setHTML($('#trace-timeline'), '<div class="empty">The agent run has not started. The pipeline may be disabled or the queue is delayed.</div>');
         return;
       }
-
-      container.innerHTML = filtered.map((l, idx) => {
-        const isError = (l.status >= 400 || l.category === 'ANOMALY');
-        const statusBadge = isError 
-          ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/20 text-red-300 border border-red-500/30">HTTP ${l.status}</span>`
-          : `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">HTTP 200</span>`;
-
-        const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : 'Recently';
-        const jsonString = JSON.stringify(l, null, 2);
-
-        return `
-          <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all">
-            <div class="flex items-center justify-between text-xs">
-              <div class="flex items-center space-x-2 font-mono">
-                ${statusBadge}
-                <span class="font-bold ${isError ? 'text-red-400' : 'text-sky-400'}">${l.method || 'POST'}</span>
-                <span class="text-slate-300 font-medium">${l.path || l.url || '/api/transcribe'}</span>
-              </div>
-              <div class="flex items-center space-x-2 text-[10px] font-mono text-slate-500">
-                <span class="text-slate-400">${l.latency || '0.12s'}</span>
-                <span>•</span>
-                <span>${timeStr}</span>
-              </div>
-            </div>
-
-            <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-              <span class="truncate max-w-[500px]">${l.summary || 'Telemetry record verified'}</span>
-              <button onclick="toggleAccordion('debug-json-${idx}')" 
-                class="text-[10px] font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 ml-2">
-                <span>Inspect JSON</span>
-                <i data-lucide="chevron-down" class="w-3 h-3"></i>
-              </button>
-            </div>
-
-            <!-- Expandable JSON Drawer with Copy Button -->
-            <div id="debug-json-${idx}" class="hidden mt-3 pt-3 border-t border-slate-800 text-[10px] font-mono text-slate-300 bg-slate-900/90 p-3 rounded-xl relative">
-              <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] text-slate-400">
-                <span>Request Telemetry Payload</span>
-                <button onclick="copyToClipboard('${encodeURIComponent(jsonString)}', this)"
-                  class="flex items-center space-x-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 transition-colors">
-                  <i data-lucide="copy" class="w-3 h-3"></i>
-                  <span>Copy JSON</span>
-                </button>
-              </div>
-              <pre class="overflow-x-auto max-h-52">${jsonString}</pre>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      refreshIcons();
+      opts = { ...opts, found: true };
+    } catch (e) { return; }
+  }
+  try {
+    const r = await api(`/api/v1/agents/runs/${encodeURIComponent(id)}`);
+    if (r.status === 404) {
+      if (opts.retries > 0) runPollTimer = setTimeout(() => loadRun(id, { ...opts, retries: opts.retries - 1 }), 2000);
+      else setHTML($('#trace-timeline'), '<div class="empty">No trace recorded for this run yet.</div>');
+      return;
     }
+    if (!r.ok) return; d = await r.json();
+  } catch (e) { return; }
+  if (id !== S.selectedRunId) return;
+  const live = d.run.status === 'running' || opts.follow, seen = seenSteps.get(id) || new Set(); seenSteps.set(id, seen);
+  const fresh = d.steps.filter(s => !seen.has(s.seq)); fresh.forEach(s => seen.add(s.seq));
+  if (live) fresh.forEach(s => enqueueStep(s, d.run)); else paintStatic(d);
+  S.agentsStatus = d.run.trigger === 'ask' ? S.agentsStatus : d.run.status;
+  renderTrace(d); if (S.route === 'architecture') renderNodes();
+  if (d.run.status === 'running' || (opts.follow && !terminal(d.run))) runPollTimer = setTimeout(() => loadRun(id, { ...opts, retries: 3 }), 2000);   // 2 s while in progress, then stop
+  else refreshRunList(false);
+}
+function paintStatic(d) {
+  if (d.run.trigger === 'ask') return;
+  const fell = new Set(d.steps.filter(s => s.kind === 'guardrail').map(s => baseAgent(s.agent))), ended = new Set(d.steps.filter(s => s.kind === 'agent_end').map(s => baseAgent(s.agent)));
+  STAGES.forEach(n => stageState[n] = fell.has(n) ? 'fb' : ended.has(n) ? 'done' : '');
+}
+function followNewRun(runId) { if (getKey()) { seenSteps.delete(runId); selectRun(runId, { follow: true, retries: 40 }); } }
+function chunkChip(id, info) {
+  const type = info ? info.source_type : 'Record';
+  let title = info ? info.title : id.slice(0, 10);
+  if (info && info.source_type !== 'SOP' && info.created_at) title = `${title.replace(/^Handover,\s*/, '')} · ${dateTime(info.created_at)}`;   // handover titles repeat; the date tells them apart
+  return `<button class="chip chip--info chip--wrap" data-chunk="${esc(id)}" title="Open the cited record">${ic('file-text', 'i--sm')}<b>${esc(type)}</b>&nbsp;${esc(title)}</button>`;
+}
+const HIDDEN = new Set(['HandoverPipeline', 'ContextGathering', 'ContextGatherer', 'ContextAssembler']);
+function renderTrace(d) {
+  const run = d.run, steps = d.steps, chunks = d.chunks || {};
+  $('#trace-status').outerHTML = `<span class="chip chip--${(STATUS_CHIP[run.status] || ['neutral'])[0]}" id="trace-status">${esc((STATUS_CHIP[run.status] || [0, run.status])[1])}</span>`;
+  $('#trace-sub').textContent = `${run.trigger === 'ask' ? 'Ask the logs' : 'Handover pipeline'} · ${run.run_id}`;
+  const tok = Object.values(run.tokens || {}).reduce((a, t) => [a[0] + (t.prompt || 0), a[1] + (t.output || 0)], [0, 0]);
+  setHTML($('#trace-summary'), `<span>${esc(run.unit || '')}</span><span>${run.total_ms != null ? esc(fmtMs(run.total_ms)) : 'in progress'}</span><span>${esc((run.models_used || []).join(' + '))}</span>${tok[0] + tok[1] ? `<span>${tok[0]} in / ${tok[1]} out tokens</span>` : ''}${(run.guardrails_triggered || []).length ? chip('warn', `${run.guardrails_triggered.length} guardrail trigger(s)`, 'circle-alert') : chip('ok', 'No guardrail triggers', 'circle-check')}`);
+  const q = $('#trace-question'); q.hidden = !run.question_preview; if (run.question_preview) setHTML(q, `<div class="notice"><div><div class="label">Question</div>${esc(run.question_preview)}</div></div>`);
+  const t0 = steps.length ? Date.parse(steps[0].timestamp) : 0, total = Math.max(1, ...steps.map(s => Date.parse(s.timestamp) - t0), run.total_ms || 0), groups = [], by = {};
+  for (const s of steps) {
+    const name = baseAgent(s.agent); if (HIDDEN.has(name)) continue;
+    let g = by[name]; if (!g) { g = by[name] = { name, start: Date.parse(s.timestamp) - t0, dur: null, items: [], ended: false }; groups.push(g); }
+    if (s.kind === 'agent_end') { g.ended = true; if (s.agent === name || g.dur == null) g.dur = s.latency_ms ?? g.dur; }
+    else if (s.kind === 'tool_call') g.items.push(`<div class="mono muted">→ ${esc(s.summary)}</div>`);
+    else if (s.kind === 'tool_result') {
+      const ids = (s.retrieved_ids || []).filter(Boolean), rules = (s.rule_ids || []).map(r => { const it = ((d.brief || {}).items || []).find(i => i.rule_id === r); return sevChip(it ? it.severity : 'WARNING', it ? `${r} · ${it.severity}` : r); }).join(' ');
+      g.items.push(`<div><span class="mono">← ${esc(s.summary)}</span>${s.latency_ms != null ? ` <span class="muted">${esc(fmtMs(s.latency_ms))}</span>` : ''}${rules ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${rules}</div>` : ''}${ids.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${ids.map(i => chunkChip(i, chunks[i])).join('')}</div>` : ''}</div>`);
+    } else if (s.kind === 'model_output') g.items.push(`<div class="muted mono">◆ ${esc(s.summary)}</div>`);
+    else if (s.kind === 'guardrail') g.items.push(`<div class="trace-guard">${ic('triangle-alert', 'i--sm')}<div><b>Guardrail</b> · ${esc(s.summary)}</div></div>`);
+  }
+  setHTML($('#trace-timeline'), groups.map(g => {
+    const dur = g.dur != null ? g.dur : (g.ended ? 0 : null), left = (g.start / total * 100).toFixed(1), width = dur ? Math.max(1.5, dur / total * 100).toFixed(1) : 2;
+    return `<div class="trace-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div style="font-weight:600;display:flex;gap:8px;align-items:center">${g.ended ? `<span class="chip chip--ok" role="img" aria-label="finished">${ic('circle-check', 'i--sm')}</span>` : '<span class="spinner" role="img" aria-label="running"></span>'}${esc(g.name)}</div><div class="mono muted small">+${esc(fmtMs(g.start))} · ${dur != null ? esc(fmtMs(dur)) : 'running…'}</div></div><div class="trace-bar"><span style="left:${left}%;width:${width}%"></span></div>${g.items.length ? `<div class="trace-items">${g.items.join('')}</div>` : ''}</div>`;
+  }).join('') || '<div class="empty">No steps recorded yet…</div>');
+  const b = d.brief, vEl = $('#trace-verdicts'), bEl = $('#trace-brief');
+  vEl.hidden = !(b && (b.items || []).some(i => i.rule_id));
+  if (!vEl.hidden) setHTML(vEl, `<div class="label" style="margin-bottom:6px">Rule verdicts (deterministic)</div><div style="display:flex;gap:6px;flex-wrap:wrap">${b.items.filter(i => i.rule_id).map(i => sevChip(i.severity, `${i.rule_id} · ${i.severity}${i.asset_tag ? ' · ' + i.asset_tag : ''}`)).join('')}</div>`);
+  bEl.hidden = !b;
+  if (b) { const det = {}; (b.citation_details || []).forEach(c => det[c.chunk_id] = c);
+    setHTML(bEl, `<div class="card"><div class="card__head"><div class="card__title" style="font-size:13px">${ic('sparkles', 'i--sm')}Brief <span class="muted small">· ${esc(b.model || '')}</span></div>${chip(b.guardrail_status === 'fallback' ? 'warn' : 'ok', 'guardrails: ' + b.guardrail_status)}</div><div class="card__body"><p>${esc(b.headline)}</p>${(b.items || []).map(i => `<div class="find">${sevChip(i.severity)}<div>${esc(i.text)}${(i.citations || []).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${i.citations.map(c => chunkChip(c, det[c])).join('')}</div>` : ''}</div></div>`).join('')}</div></div>`); }
+}
+async function openChunk(id) {
+  openModal(`<div style="display:flex;justify-content:space-between;gap:12px"><div><h2 id="chunk-h" class="card__title">Loading…</h2><div class="muted small mono" id="chunk-meta"></div></div><button class="iconbtn" data-close="1" aria-label="Close">${ic('x', 'i--lg')}</button></div><pre style="white-space:pre-wrap;font:13px/1.6 var(--sans);margin-top:14px" id="chunk-text"></pre>`, 'chunk-h');
+  try {
+    const r = await api(`/api/v1/agents/chunks/${encodeURIComponent(id)}`); if (!r.ok) throw new Error(r.status); const c = await r.json();
+    $('#chunk-h').textContent = c.title || id; $('#chunk-meta').textContent = `${c.source_type} · ${c.source_id}${c.revision ? ' · rev ' + c.revision : ''}${c.seeded ? ' · seeded demo data' : ''}`; $('#chunk-text').textContent = c.text || '';
+  } catch (e) { const h = $('#chunk-h'); if (h) h.textContent = 'Could not load this record'; }
+}
 
-    // ACCORDION TOGGLE
-    function toggleAccordion(id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.toggle('hidden');
-    }
+// ---------------------------------------------------------------- Ask the logs
+const EXAMPLES = ['What happened with P-201B in the last two shifts?', 'Is it safe to start hot work near V-102?', 'What is the isolation procedure for a pump seal replacement?'];
+async function submitAsk() {
+  const q = $('#ask-question').value.trim(), unit = $('#ask-unit').value.trim(), out = $('#ask-result'), btn = $('#ask-btn');
+  if (!q || !unit || !getKey()) return;
+  btn.disabled = true; out.innerHTML = `<div class="muted small"><span class="spinner"></span> Searching SOPs and past handovers…</div>`;
+  try {
+    const r = await api('/api/v1/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, unit }) });
+    if (!r.ok) throw new Error(r.status === 429 ? 'Too many questions. Wait a minute and try again.' : `The request failed (HTTP ${r.status}).`);
+    const a = await r.json();
+    out.innerHTML = `<div class="stack" style="gap:10px"><div class="ai" style="white-space:pre-wrap">${esc(a.answer)}</div>
+      ${a.confidence_note ? `<div class="notice notice--warn">${ic('circle-alert')}<div>${esc(a.confidence_note)}</div></div>` : ''}
+      ${a.citations.length ? `<div><div class="label" style="margin-bottom:6px">Citations</div><div style="display:flex;gap:6px;flex-wrap:wrap">${a.citations.map(c => chunkChip(c.chunk_id, c)).join('')}</div></div>` : ''}
+      ${a.rule_verdicts.length ? `<div><div class="label" style="margin-bottom:6px">Open conflicts (from the rules, unchanged)</div><div style="display:flex;gap:6px;flex-wrap:wrap">${a.rule_verdicts.map(v => sevChip(v.severity, `${v.rule_id} · ${v.severity} · ${v.status}`)).join('')}</div></div>` : ''}
+      <div class="small muted" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="mono">${esc(a.model)} · ${esc(a.answer_language)} · ${esc(fmtMs(a.latency_ms))}</span><button class="btn" data-open-run="${esc(a.run_id)}">View trace</button></div></div>`;
+    refreshRunList(false);
+  } catch (e) { out.innerHTML = `<div class="notice notice--bad">${ic('triangle-alert')}<div>${esc(e.message === 'unauthorized' ? 'Key rejected. Unlock again.' : e.message)}</div></div>`; }
+  finally { btn.disabled = false; }
+}
 
-    // COPY TO CLIPBOARD
-    function copyToClipboard(encodedStr, btnEl) {
-      const text = decodeURIComponent(encodedStr);
-      navigator.clipboard.writeText(text).then(() => {
-        const originalText = btnEl.innerHTML;
-        btnEl.innerHTML = `<span class="text-emerald-400 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Copied!</span>`;
-        refreshIcons();
-        setTimeout(() => {
-          btnEl.innerHTML = originalText;
-          refreshIcons();
-        }, 1800);
-      }).catch(err => {
-        console.error("Copy failed:", err);
-      });
-    }
+// ---------------------------------------------------------------- incident drawer (Acknowledge is real and never resolves anything)
+function openDrawer() {
+  const st = safetyState(); if (!st.top) return;
+  lastFocus = document.activeElement;
+  const { c, ev } = st.top, dcs = S.stream.dcs_telemetry || {};
+  const asset = (c.evidence_ids || []).map(e => String(e).replace(/^DCS-/, '')).find(e => dcs[e]), cap = asset && (ev.capsules || []).find(x => x.asset_tag === asset), feed = asset && dcs[asset];
+  const history = events().filter(e => (e.conflicts || []).some(x => x.rule_id === c.rule_id && x.title === c.title));
+  const acked = isAcked(c), crit = c.severity === 'CRITICAL', runId = (ev.brief && ev.brief.run_id) || `run-${ev.id}`;
+  $('#drawer-root').innerHTML = `<div class="scrim" data-close-drawer="1"></div>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-h">
+      <div class="drawer__head"><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${sevChip(c.severity, c.severity)}${acked ? chip('warn', 'Acknowledged · still open', 'circle-alert') : chip('critical', 'Open', 'triangle-alert')}<span class="mono small muted">${esc(c.rule_id)}</span></div><h2 id="drawer-h" style="font-size:18px;font-weight:600;margin-top:8px">${esc(c.title)}</h2></div><button class="iconbtn" data-close-drawer="1" aria-label="Close">${ic('x', 'i--lg')}</button></div>
+      <div class="drawer__body">
+        <div class="drawer__sect"><div class="label" style="margin-bottom:6px">What the rules found</div><p>${esc(c.description)}</p></div>
+        ${asset ? `<div class="drawer__sect"><div class="label" style="margin-bottom:8px">Evidence</div><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><div class="card" style="padding:10px"><div class="muted small">Logged state (edge)</div><div class="mono" style="font-weight:600;font-size:16px">${esc(cap ? cap.asserted_state : '–')}</div></div><div class="card" style="padding:10px"><div class="muted small">Simulated plant feed</div><div class="mono" style="font-weight:600;font-size:16px">${esc(feed.status)}${feed.pressure != null ? ` · ${esc(feed.pressure)} bar` : ''}</div></div></div><div class="muted small" style="margin-top:8px">Asset <span class="mono">${esc(asset)}</span>. Evidence ids: ${(c.evidence_ids || []).map(e => `<span class="chip chip--mono">${esc(e)}</span>`).join(' ')}</div></div>` : `<div class="drawer__sect"><div class="label" style="margin-bottom:6px">Evidence ids</div>${(c.evidence_ids || []).map(e => `<span class="chip chip--mono">${esc(e)}</span>`).join(' ')}</div>`}
+        <div class="drawer__sect"><div class="label" style="margin-bottom:6px">Event history</div>${history.map(h => `<div class="small" style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--border-2)"><span class="mono">${esc(h.id)}</span><span class="muted">${esc(dateTime(h.timestamp))} · ${esc(h.shift_name)}</span></div>`).join('') || '<span class="muted small">No other events.</span>'}</div>
+        <div class="drawer__sect"><div class="label" style="margin-bottom:6px">Audit</div><dl class="small" style="display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0"><dt class="muted">Event</dt><dd class="mono" style="margin:0;text-align:right">${esc(ev.id)}</dd><dt class="muted">Persisted</dt><dd style="margin:0;text-align:right">${esc(((cf().firestore || {}).status) || '–')}</dd><dt class="muted">Sync status</dt><dd style="margin:0;text-align:right">${esc(ev.sync_status)}</dd><dt class="muted">Device</dt><dd class="mono" style="margin:0;text-align:right">${esc(ev.device_id)}</dd><dt class="muted">Agent run</dt><dd class="mono" style="margin:0;text-align:right">${esc(runId)}</dd></dl></div>
+        <div class="drawer__sect"><div class="notice ${crit ? 'notice--bad' : ''}">${ic('shield-alert')}<div>${crit ? '<b>Handover transfer stays blocked</b> while a critical conflict is open. ' : ''}Supervisor readback of every critical item is required. Acknowledging records that a supervisor has seen this alert. <b>It does not resolve the conflict</b> or release the transfer; the conflict stays open until it is re-verified in the field.</div></div></div>
+      </div>
+      <div class="drawer__foot"><button class="btn" data-open-run="${esc(runId)}">Open agent trace</button>${acked ? '<button class="btn" disabled>Already acknowledged</button>' : `<button class="btn btn--primary" data-action="ack">${ic('key-round', 'i--sm')}Acknowledge (supervisor key)</button>`}</div>
+    </aside>`;
+  setTimeout(() => $('.drawer .iconbtn').focus(), 30);
+}
+function closeDrawer() { $('#drawer-root').innerHTML = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+async function acknowledge() {
+  if (!getKey()) { toast('Enter the supervisor key first.', 'bad'); openUnlock(); return; }
+  const btn = $('[data-action="ack"]'); if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/v1/dashboard/clear_alert', { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    toast('Acknowledgement recorded. The conflict stays open until it is re-verified in the field.');
+    await poll(true); if ($('.drawer')) openDrawer();
+  } catch (e) { if (e.message !== 'unauthorized') toast('The acknowledgement could not be recorded: ' + e.message, 'bad'); if (btn) btn.disabled = false; }
+}
 
-    // ----------------------------------------------------
-    // BOOT & POLLING INTERVAL
-    // ----------------------------------------------------
-    document.addEventListener('DOMContentLoaded', () => {
-      refreshIcons();
-      pollTelemetry(true);
-      setInterval(() => pollTelemetry(false), 2000);
-    });
-  </script>
+// ---------------------------------------------------------------- demo actions (real syncs; clearly labelled in the menu)
+async function sendDemo(kind) {
+  const now = Date.now(), cap = kind === 'conflict'
+    ? { category: 'ISOLATION', asset_tag: 'P-201B', asserted_state: 'ISOLATED', text_transcript: 'Pump P-201B isolated and lock applied at 10:30.', intent_severity: 'CRITICAL' }
+    : { category: 'EQUIPMENT', asset_tag: 'V-102', asserted_state: 'CLOSED', text_transcript: 'Drum V-102 level control in auto, readings normal.', intent_severity: 'INFO' };
+  try {
+    const r = await fetch('/api/v1/handover/batch_sync', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: 'dashboard-demo', operator_id: 'TECH-DEMO-01', shift_name: 'DEMO-SHIFT', unit_name: 'HYDROCRACKER-01', capsules: [{ uuid: `demo-${now}`, timestamp: new Date(now).toISOString(), ...cap }] }) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast(`Demo ${kind === 'conflict' ? 'conflict' : 'handover'} sent. It is a real record and agent run.`); setTimeout(() => poll(true), 800);
+  } catch (e) { toast('Could not send the demo handover: ' + e.message, 'bad'); }
+}
+
+// ---------------------------------------------------------------- router
+const ROUTES = ['overview', 'architecture', 'telemetry', 'audit', 'agents', 'debug'];
+function currentRoute() { const r = (location.hash.replace(/^#\/?/, '') || 'overview'); return ROUTES.includes(r) ? r : 'overview'; }
+function renderRoute() {
+  S.route = currentRoute();
+  ROUTES.forEach(r => { $('#screen-' + r).hidden = r !== S.route; });
+  $$('.nav a').forEach(a => { if (a.dataset.route === S.route) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  ({ overview: renderOverview, architecture: () => { renderNodes(); renderInspector(); }, telemetry: renderTelemetry, audit: renderAudit, agents: () => { renderKeyState(); if (getKey() && !S.runs.length) refreshRunList(true); }, debug: renderDebug })[S.route]();
+  renderHeader(); document.title = `${{ overview: 'Overview', architecture: 'Living Architecture', telemetry: 'Telemetry', audit: 'Audit Trail', agents: 'Agent Trace', debug: 'Debug Console' }[S.route]} · Baton Control Room`;
+  $('#nav').classList.remove('nav--open'); $('#nav-toggle').setAttribute('aria-expanded', 'false');
+}
+
+// ---------------------------------------------------------------- polling
+async function poll(manual) {
+  if (poll.busy) return; poll.busy = true; const t = performance.now();
+  try {
+    const r = await fetch('/api/v1/dashboard/stream', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json(); S.stream = data; S.lastOk = Date.now(); S.error = null;
+    S.pollMs.push(performance.now() - t); if (S.pollMs.length > 12) S.pollMs.shift();
+    onStream(data);
+  } catch (e) { S.error = e.message; }
+  finally { poll.busy = false; renderHeader(); if (S.error) renderRoute(); }
+}
+function onStream(data) {
+  const ev = latestEvent(), ts = ev && ev.timestamp;
+  if (!S.firstLoad && ts && S.lastEventTs && new Date(ts) > new Date(S.lastEventTs) && !isBaseline(ev)) { playSyncFlow(ev); followNewRun('run-' + ev.id); }
+  if (ts) S.lastEventTs = ts; S.firstLoad = false;
+  const r = S.route;
+  if (r === 'overview') renderOverview(); else if (r === 'architecture') { renderNodes(); renderInspector(); } else if (r === 'telemetry') renderTelemetry();
+  else if (r === 'audit') renderAudit(); else if (r === 'debug') renderDebug();
+  renderHeader();
+}
+async function probeHealth() {
+  const t = performance.now();
+  try { const r = await fetch('/api/v1/health', { cache: 'no-store' }); S.health = { ok: r.ok, ms: performance.now() - t, at: Date.now() }; }
+  catch (e) { S.health = { ok: false, ms: null, at: Date.now() }; }
+  if (S.route === 'debug') renderDebug();
+}
+
+// ---------------------------------------------------------------- events (delegated)
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-action],[data-node],[data-row],[data-chunk],[data-open-run],[data-close],[data-close-drawer],[data-copy],[data-t],[data-f]');
+  if (!e.target.closest('.menu-wrap') || e.target.closest('.menu')) { $('#menu').hidden = true; $('#menu-btn').setAttribute('aria-expanded', 'false'); }
+  if (!t) return;
+  const a = t.dataset.action;
+  if (a) { $('#menu').hidden = true; $('#menu-btn').setAttribute('aria-expanded', 'false'); }
+  if (a === 'demo-nominal') sendDemo('nominal'); else if (a === 'demo-conflict') sendDemo('conflict'); else if (a === 'refresh') { poll(true); toast('Refreshed.'); }
+  else if (a === 'key') openUnlock(); else if (a === 'unlock-submit') submitUnlock(); else if (a === 'lock') { setKey(null); stopRunPolling(); closeModal(); renderKeyState(); toast('Locked.'); }
+  else if (a === 'review') openDrawer(); else if (a === 'ack') acknowledge(); else if (a === 'toggle-ai') { S.aiOpen = !S.aiOpen; renderAI(); }
+  else if (t.dataset.node) { S.selectedNode = S.selectedNode === t.dataset.node ? null : t.dataset.node; renderNodes(); renderInspector(); if (S.selectedNode) $('#inspector').scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' }); }
+  else if (t.dataset.row) { const k = t.dataset.row; S.openRows.has(k) ? S.openRows.delete(k) : S.openRows.add(k); if (S.route === 'audit') renderAudit(); else renderDebug(); }
+  else if (t.dataset.chunk) openChunk(t.dataset.chunk);
+  else if (t.dataset.openRun) { closeModal(); closeDrawer(); if (!getKey()) { openUnlock(); return; } location.hash = '#/agents'; selectRun(t.dataset.openRun); }
+  else if (t.dataset.close && (t.classList.contains('modal') ? e.target === t : true)) closeModal();
+  else if (t.dataset.closeDrawer) closeDrawer();
+  else if (t.dataset.copy) navigator.clipboard.writeText(decodeURIComponent(t.dataset.copy)).then(() => toast('Copied.')).catch(() => toast('Could not copy.', 'bad'));
+  else if (t.dataset.t && t.closest('#audit-tabs')) { S.auditTab = t.dataset.t; renderAudit(); }
+  else if (t.dataset.f && t.closest('#sensor-filters')) { S.sensorFilter = t.dataset.f; renderTelemetry(); }
+  else if (t.dataset.f && t.closest('#log-filters')) { S.logFilter = t.dataset.f; renderDebug(); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#modal-root').innerHTML) closeModal(); else if ($('.drawer')) closeDrawer(); else { $('#menu').hidden = true; $('#menu-btn').setAttribute('aria-expanded', 'false'); } } });
+$('#menu-btn').addEventListener('click', e => { e.stopPropagation(); const m = $('#menu'); m.hidden = !m.hidden; e.currentTarget.setAttribute('aria-expanded', String(!m.hidden)); });
+$('#nav-toggle').addEventListener('click', () => { const n = $('#nav'); n.classList.toggle('nav--open'); $('#nav-toggle').setAttribute('aria-expanded', String(n.classList.contains('nav--open'))); });
+$('#audit-search').addEventListener('input', e => { S.auditQuery = e.target.value; renderAudit(); });
+$('#run-select').addEventListener('change', e => selectRun(e.target.value));
+$('#ask-btn').addEventListener('click', submitAsk);
+$('#ask-question').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitAsk(); });
+$('#ask-examples').innerHTML = EXAMPLES.map(x => `<button class="chip" data-example="${esc(x)}" type="button">${esc(x)}</button>`).join('');
+$('#ask-examples').addEventListener('click', e => { const b = e.target.closest('[data-example]'); if (b) $('#ask-question').value = b.dataset.example; });
+addEventListener('hashchange', renderRoute);
+addEventListener('resize', () => layoutWires());
+if (window.ResizeObserver) new ResizeObserver(() => layoutWires()).observe($('#topo-stage'));
+
+// ---------------------------------------------------------------- boot
+renderKeyState(); renderRoute(); poll(true); probeHealth();
+setInterval(() => { if (!document.hidden) poll(false); }, 2000);
+setInterval(() => { if (!document.hidden) { probeHealth(); } }, 10000);
+setInterval(() => { renderHeader(); if (S.route === 'overview' && S.stream) renderKpis(); }, 1000);   // keeps the "updated 3 s ago" texts honest
+document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(true); });
+})();
+</script>
 </body>
 </html>

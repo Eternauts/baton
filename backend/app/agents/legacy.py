@@ -5,6 +5,8 @@ import re
 from typing import List, Dict, Any, Optional
 from google.cloud import discoveryengine
 
+from app.config import get_settings
+from app.llm import generate
 from app.models import Fact, SafetyConflict, GapQuestion, BriefItem, HandoverBrief, Severity
 
 
@@ -18,20 +20,8 @@ class GeminiAgentService:
     """
 
     def __init__(self):
-        self.client = None
-        # Check if google-genai is configured
-        project = os.getenv("GOOGLE_CLOUD_PROJECT")
-        api_key = os.getenv("GEMINI_API_KEY")
-        if project or api_key:
-            try:
-                from google import genai
-                if api_key:
-                    self.client = genai.Client(api_key=api_key)
-                else:
-                    vertex_loc = os.getenv("VERTEX_LOCATION", "us-central1")
-                    self.client = genai.Client(vertexai=True, project=project, location=vertex_loc)
-            except Exception as e:
-                print(f"[GeminiAgentService] Warning: Failed to init genai client: {e}. Using fallback mode.")
+        # Gemini access goes through app.llm (single shared client, retries, logging).
+        self.client = bool(get_settings().project)
 
     def extract_facts(self, log_text: str, voice_transcripts: List[str]) -> List[Fact]:
         """Extract structured facts from text logs and voice transcripts."""
@@ -45,10 +35,7 @@ class GeminiAgentService:
                     "Each item should have: 'text', 'category' (EQUIPMENT|ISOLATION|PERMIT|ALARM), 'source_type' (LOG|VOICE).\n"
                     f"Content:\n{full_text}"
                 )
-                res = self.client.models.generate_content(
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-                    contents=prompt,
-                )
+                res = generate("extract_facts", prompt, max_output_tokens=2048, timeout_s=30)
 
                 # Attempt json parse
                 clean_text = res.text.strip().removeprefix("```json").removesuffix("```").strip()
@@ -91,34 +78,66 @@ class GeminiAgentService:
 
         return facts
 
+    _LANG = {"en": "English", "ta": "Tamil", "ms": "Malay", "zh": "Chinese"}
+
+    @staticmethod
+    def _template_question(conflict: SafetyConflict, target_language: str) -> str:
+        """Fixed fallback wording. Short on purpose: the conflict's details are shown next to the question."""
+        t = conflict.title
+        if target_language == "ta":
+            return f"{t} குறித்துத் தயவுசெய்து உறுதிப்படுத்தவும். தற்போதைய நிலை என்ன?"
+        if target_language == "ms":
+            return f"Sila sahkan berkenaan {t}. Apakah status terkini?"
+        if target_language == "zh":
+            return f"请确认关于 {t}。目前的实际状态是什么？"
+        return f"Clarification needed on {t}. Can you confirm the current physical state, and who checked it?"
+
     def generate_gap_questions(
         self,
         conflicts: List[SafetyConflict],
         facts: List[Fact],
         target_language: str = "en"
     ) -> List[GapQuestion]:
-        """Formulate targeted verification questions for the outgoing operator."""
-        questions: List[GapQuestion] = []
+        """Questions for the outgoing operator, one per distinct conflict (at most 3).
+
+        The rules decide WHICH conflicts need a question; the fast model only words it, in the operator's
+        language, as something answerable from what they saw. A question that fails validation, or any model
+        failure, falls back to the fixed template, so a conflict is never left without one.
+        """
         if not conflicts:
-            return questions
+            return []
+        seen, distinct = set(), []
+        for c in conflicts:                       # the same conflict reported twice is asked about once
+            key = (c.rule_id, c.title)
+            if key not in seen:
+                seen.add(key)
+                distinct.append(c)
+        distinct = distinct[:3]
+        texts = [self._template_question(c, target_language) for c in distinct]
 
-        for idx, conflict in enumerate(conflicts[:3]):
-            q_text = f"Clarification needed on {conflict.title}: {conflict.description} Can you confirm the current physical state?"
-            if target_language == "ta":
-                q_text = f"{conflict.title} குறித்துத் தயவுசெய்து உறுதிப்படுத்தவும்: {conflict.description} தற்போதைய நிலை என்ன?"
-            elif target_language == "ms":
-                q_text = f"Sila sahkan berkenaan {conflict.title}: {conflict.description} Apakah status terkini?"
-            elif target_language == "zh":
-                q_text = f"请确认关于 {conflict.title}: {conflict.description} 目前的实际状态是什么？"
-
-            questions.append(
-                GapQuestion(
-                    id=f"Q-{idx+1}",
-                    question_text=q_text,
-                    target_language=target_language
+        if self.client:
+            try:
+                listing = "\n".join(f"{i + 1}. [{c.rule_id}] {c.title}: {c.description}" for i, c in enumerate(distinct))
+                prompt = (
+                    f"You are Baton, a shift-handover safety assistant. Write ONE short question in {self._LANG.get(target_language, 'English')} "
+                    "for each conflict below, to the outgoing operator who is leaving the shift. Each question: at most 30 words, "
+                    "names the equipment or permit, and asks what they physically saw or did and who verified it. "
+                    "Never say or imply the conflict is resolved, fine or safe. Return only a JSON array of exactly "
+                    f"{len(distinct)} strings, in the same order.\n\nConflicts:\n{listing}"
                 )
-            )
-        return questions
+                res = generate("gap_questions", prompt, fast=True, max_output_tokens=600, timeout_s=12,
+                               response_mime_type="application/json")
+                data = json.loads(res.text.strip().removeprefix("```json").removesuffix("```").strip())
+                if isinstance(data, list) and len(data) == len(distinct):
+                    from app.agents.guardrails import find_clearing_language
+                    for i, q in enumerate(data):
+                        q = str(q).strip()
+                        if 15 <= len(q) <= 300 and not find_clearing_language(q):
+                            texts[i] = q
+            except Exception as err:  # noqa: BLE001 - the template questions below are the fallback
+                print(f"[GeminiAgentService] gap question fallback: {type(err).__name__}")
+
+        return [GapQuestion(id=f"Q-{i + 1}", question_text=t, target_language=target_language) for i, t in enumerate(texts)]
 
     def compose_brief(
         self,
@@ -156,6 +175,21 @@ class GeminiAgentService:
             completion_status="PENDING" if conflicts else "COMPLETED"
         )
 
+    @staticmethod
+    def deterministic_batch_summary(capsules: List[Any], conflicts: List[SafetyConflict]) -> str:
+        """Rule-based summary with no model call."""
+        capsule_count = len(capsules)
+        crit_conflicts = [c for c in conflicts if c.severity == Severity.CRITICAL]
+        if crit_conflicts:
+            conflict_names = ", ".join(c.title for c in crit_conflicts[:2])
+            return (
+                f"Batch synchronized {capsule_count} logs with {len(crit_conflicts)} CRITICAL safety conflict(s): "
+                f"{conflict_names}. Immediate supervisor intervention required."
+            )
+        elif conflicts:
+            return f"Batch synchronized {capsule_count} logs with {len(conflicts)} warning(s). Telemetry cross-verified."
+        return f"Batch synchronized {capsule_count} logs cleanly. All field assertions match live DCS telemetry."
+
     async def generate_batch_summary(
         self,
         capsules: List[Any],
@@ -170,15 +204,7 @@ class GeminiAgentService:
 
         # Fast deterministic fallback when offline or no API client
         if not self.client:
-            if crit_conflicts:
-                conflict_names = ", ".join(c.title for c in crit_conflicts[:2])
-                return (
-                    f"Batch synchronized {capsule_count} logs with {len(crit_conflicts)} CRITICAL safety conflict(s): "
-                    f"{conflict_names}. Immediate supervisor intervention required."
-                )
-            elif conflicts:
-                return f"Batch synchronized {capsule_count} logs with {len(conflicts)} warning(s). Telemetry cross-verified."
-            return f"Batch synchronized {capsule_count} logs cleanly. All field assertions match live DCS telemetry."
+            return self.deterministic_batch_summary(capsules, conflicts)
 
         # Async execution for Gemini API to minimize endpoint latency
         import asyncio
@@ -203,12 +229,9 @@ class GeminiAgentService:
                     f"Detected Safety Conflicts:\n{conflicts_str}\n\n"
                     "Summary:"
                 )
-                res = self.client.models.generate_content(
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-                    contents=prompt
-                )
-                if res and res.text:
-                    return res.text.strip()
+                res = generate("batch_summary", prompt, max_output_tokens=300, timeout_s=20)
+                if res.text:
+                    return res.text
             except Exception as e:
                 print(f"[GeminiAgentService] generate_batch_summary error: {e}. Using fallback.")
 

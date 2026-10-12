@@ -6,7 +6,10 @@ import asyncio
 import time
 import os
 import secrets
+import hashlib
 import logging
+import threading
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 # Load local environment variables from .env if present
@@ -17,13 +20,16 @@ import pathlib
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Header
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from google.api_core.exceptions import GoogleAPICallError, RetryError
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 from google.cloud import logging as cloud_logging
-from google import genai
+from google.genai import types as genai_types
 from pydantic import BaseModel
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)  # keep request URLs out of the logs
 logger = logging.getLogger(__name__)
 
 
@@ -35,12 +41,52 @@ from app.models import (
 )
 from app.rules import SafetyRulesEngine
 from app.agents import GeminiAgentService
+from app.plant_data import MOCK_ACTIVE_PERMITS, MOCK_DCS_TELEMETRY
+from app.safety import evaluate_capsules, facts_from_capsules
+from app.config import get_settings, validate_startup
+from app.llm import generate as llm_generate
+from app.pipeline.publisher import publish_handover_synced, run_id_for
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    for problem in validate_startup():
+        logger.error("Config problem: %s", problem)
+
+    def _warm():   # importing ADK takes a few seconds; do it now so the first question does not pay for it
+        try:
+            import app.agents.ask  # noqa: F401
+        except Exception as err:  # noqa: BLE001
+            logger.warning("ask warm-up failed: %s", type(err).__name__)
+    threading.Thread(target=_warm, daemon=True).start()
+    yield
+
 
 app = FastAPI(
     title="Baton MVP - Shift-Handover Guardian",
     description="Safety Rule Engine + Gemini AI Multi-Agent Handover Platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
+
+
+def require_aegis_key(provided: Optional[str]) -> None:
+    """Reject the request unless it carries the configured X-Aegis-Key. Fails closed if none is configured."""
+    expected = get_settings().aegis_api_key
+    if not expected or not provided or not secrets.compare_digest(provided, expected):
+        raise HTTPException(status_code=401, detail={"error": {"code": "UNAUTHORIZED", "message": "Invalid or missing X-Aegis-Key"}})
+
+def require_app_key(provided: Optional[str]) -> None:
+    """The key a shipped app (including the public web app) may hold: the supervisor key, or the separate demo key.
+    The demo key opens the app endpoints only. Supervisor actions (acknowledge an alert, read agent traces) still
+    need the supervisor key through require_aegis_key, so a key visible in a web page cannot reach them."""
+    s = get_settings()
+    ok = bool(provided) and any(k and secrets.compare_digest(provided, k) for k in (s.aegis_api_key, s.aegis_demo_key))
+    if not ok:
+        raise HTTPException(status_code=401, detail={"error": {"code": "UNAUTHORIZED", "message": "Invalid or missing X-Aegis-Key"}})
+
+
+# The website's JavaScript and WebAssembly are several MB: compress them (Cloud Run does not).
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 # Enable CORS for local development and Firebase Hosting frontend
 app.add_middleware(
@@ -90,6 +136,27 @@ def get_handover_session(session_id: str) -> Optional[HandoverSession]:
     return None
 
 
+def _batch_id(device_id: Optional[str], uuids: List[str]) -> str:
+    """Stable handover id for a set of capsules: the same device and capsule UUIDs always give the same id."""
+    raw = (device_id or "") + "|" + "|".join(sorted(uuids))
+    return "batch-" + hashlib.sha256(raw.encode()).hexdigest()[:8]
+
+
+def _find_batch_event(batch_id: str) -> Optional[Dict[str, Any]]:
+    """A previously recorded sync event: this instance's memory first, then the Firestore ledger. Blocking."""
+    for e in list(dashboard_telemetry_stream):
+        if e.get("id") == batch_id:
+            return dict(e)
+    if firestore_db:
+        try:
+            snap = firestore_db.collection("batch_sync_events").document(batch_id).get()
+            if snap.exists:
+                return snap.to_dict()
+        except Exception as e:  # noqa: BLE001 - a failed lookup must never block a real sync
+            logger.warning("batch lookup failed: %s", type(e).__name__)
+    return None
+
+
 def save_batch_sync_event(event_dict: Dict[str, Any]):
     """Persist batch sync event to Firestore batch_sync_events collection."""
     if firestore_db:
@@ -99,14 +166,23 @@ def save_batch_sync_event(event_dict: Dict[str, Any]):
             logger.warning(f"Failed to persist batch event {event_dict.get('id')} to Firestore: {e}")
 
 
+_ledger_cache: Dict[str, Any] = {"at": 0.0, "n": None}
+
+
 def get_firestore_ledger_count() -> int:
-    """Return count of persisted audit documents in Firestore."""
+    """Number of persisted audit documents. Uses one aggregation query and caches it for 15 s: the dashboard polls
+    every 2 s, and listing up to 100 documents on every poll cost about 100 reads per second per open dashboard."""
+    now = time.time()
+    if _ledger_cache["n"] is not None and now - _ledger_cache["at"] < 15:
+        return _ledger_cache["n"]
     if firestore_db:
         try:
-            docs = list(firestore_db.collection("batch_sync_events").limit(100).stream())
-            return len(docs)
+            n = int(firestore_db.collection("batch_sync_events").count().get()[0][0].value)
+            _ledger_cache.update(at=now, n=n)
+            return n
         except Exception:
-            pass
+            if _ledger_cache["n"] is not None:
+                return _ledger_cache["n"]
     return len(dashboard_telemetry_stream)
 
 
@@ -133,19 +209,7 @@ def hydrate_telemetry_from_firestore():
 rules_engine = SafetyRulesEngine()
 agent_service = GeminiAgentService()
 
-# Mock DCS Plant Telemetry for live cross-verification of edge-asserted states
-MOCK_DCS_TELEMETRY: Dict[str, Any] = {
-    "P-201B": {"status": "OPEN", "pressure": 12.4, "temp_c": 64.2},
-    "V-102": {"status": "CLOSED", "flow_rate": 0.0},
-    "ESDV-301": {"status": "BYPASS", "active": True},
-    "TK-501": {"status": "ACTIVE", "level_pct": 82.5},
-}
-
-# Mock Active Work Permits (including hot work and maintenance)
-MOCK_ACTIVE_PERMITS: List[Dict[str, Any]] = [
-    {"id": "PERMIT-HW-409", "type": "HOT_WORK", "title": "Unit 3 Flare Line Welding", "status": "OPEN"},
-    {"id": "PERMIT-M-102", "type": "MAINTENANCE", "title": "Pump Gasket Replacement", "status": "EXPIRED", "expired": True}
-]
+# Simulated plant feed and permits live in app/plant_data.py (shared with the background pipeline).
 
 # In-memory circular buffer for Cloud Control Room live dashboard (stores last 20 events)
 dashboard_telemetry_stream: deque = deque(maxlen=20)
@@ -188,7 +252,8 @@ def fetch_and_parse_cloud_logs(max_entries: int = 50) -> List[Dict[str, Any]]:
             f'logName="projects/{project_id}/logs/run.googleapis.com%2Frequests" AND '
             'NOT httpRequest.requestUrl:"dashboard" AND '
             'NOT httpRequest.requestUrl:"health" AND '
-            'NOT httpRequest.requestUrl:"favicon.ico"'
+            'NOT httpRequest.requestUrl:"favicon.ico" AND '
+            'NOT httpRequest.requestUrl:"/agents/"'      # the dashboard's own trace polling is not a substantive request
         )
         entries = list(cloud_log_client.list_entries(
             filter_=filter_expr,
@@ -321,25 +386,28 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
     Executes deterministic safety checks against DCS telemetry and generates an AI summary.
     Returns HTTP 200 with conflict payload so edge clients never crash on 4xx/5xx network errors.
     """
+    sync_started = time.time()
     now_utc = datetime.now(timezone.utc).isoformat()
 
-    # 1. Map incoming capsules to structured Facts
-    facts: List[Fact] = []
-    for c in req.capsules:
-        # Build composite fact text ensuring tag and asserted state are present for deterministic engine
-        fact_text = f"Asset {c.asset_tag} asserted as {c.asserted_state}. {c.text_transcript}".strip()
-        facts.append(
-            Fact(
-                id=c.uuid,
-                text=fact_text,
-                category=c.category.upper(),
-                source_type="ON_DEVICE_GEMMA",
-                source_id=c.uuid
-            )
-        )
+    # Idempotent by capsule: the same device re-sending the same capsules is the same handover. A retry, a
+    # double tap or an app that re-sends a pending queue must not create another event, another set of
+    # conflicts and another agent run.
+    session_id = _batch_id(req.device_id, [c.uuid for c in req.capsules])
+    replay = await asyncio.to_thread(_find_batch_event, session_id)
+    if replay is not None:
+        logger.info("batch_sync replay: %s already recorded, nothing re-run", session_id)
+        stored = [SafetyConflict(**c) for c in replay.get("conflicts", [])]
+        critical = any(c.rule_id in ["R1", "R2"] or c.severity == Severity.CRITICAL for c in stored)
+        return CapsuleBatchSyncResponse(
+            sync_status="CONFLICT_DETECTED" if critical else "SUCCESS",   # an acknowledged conflict is still a conflict
+            synced_count=len(req.capsules), has_critical_conflict=critical, conflicts=stored,
+            summary=replay.get("summary") or "", processed_at=replay.get("processed_at") or now_utc,
+            pipeline_run_id=run_id_for(session_id), handover_id=session_id)
 
-    # 2. Evaluate against live DCS telemetry and active permits using deterministic rules
-    conflicts = rules_engine.evaluate(facts, MOCK_DCS_TELEMETRY, MOCK_ACTIVE_PERMITS)
+    # 1-2. Capsules to facts, then the deterministic rules (shared with the background pipeline).
+    capsule_dicts = [c.model_dump(mode="json") for c in req.capsules]
+    facts: List[Fact] = facts_from_capsules(capsule_dicts)
+    conflicts = evaluate_capsules(capsule_dicts)
 
     # 3. Check for critical rule violations (R1: Isolation Mismatch, R2: SIMOPS Conflict)
     has_critical_conflict = any(
@@ -349,21 +417,24 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
 
     sync_status = "CONFLICT_DETECTED" if has_critical_conflict else "SUCCESS"
 
-    # 4. Generate AI Executive Summary via Gemini (uses asyncio.gather for minimal endpoint latency)
-    summary_task = agent_service.generate_batch_summary(req.capsules, conflicts)
-    summary_results = await asyncio.gather(summary_task, return_exceptions=True)
-    
-    if isinstance(summary_results[0], Exception):
-        logger.error(f"Error generating batch summary: {summary_results[0]}")
-        summary = (
-            f"Batch sync processed {len(req.capsules)} logs. "
-            f"{'CRITICAL safety conflicts detected!' if has_critical_conflict else 'All logs verified.'}"
-        )
+    # 4. Executive summary. While LEGACY_BRIEF_INLINE is on, Gemini writes it inside the request;
+    #    otherwise the rule-based text is used and the pipeline's briefing agent owns the real brief.
+    if os.getenv("LEGACY_BRIEF_INLINE", "true").strip().lower() == "true":
+        summary_task = agent_service.generate_batch_summary(req.capsules, conflicts)
+        summary_results = await asyncio.gather(summary_task, return_exceptions=True)
+
+        if isinstance(summary_results[0], Exception):
+            logger.error(f"Error generating batch summary: {summary_results[0]}")
+            summary = (
+                f"Batch sync processed {len(req.capsules)} logs. "
+                f"{'CRITICAL safety conflicts detected!' if has_critical_conflict else 'All logs verified.'}"
+            )
+        else:
+            summary = summary_results[0]
     else:
-        summary = summary_results[0]
+        summary = agent_service.deterministic_batch_summary(req.capsules, conflicts)
 
     # 5. Record session in memory & persist to Firestore for supervisor audit
-    session_id = f"batch-{uuid.uuid4().hex[:8]}"
     session = HandoverSession(
         id=session_id,
         unit_name=req.unit_name or "UNIT-01",
@@ -408,24 +479,61 @@ async def batch_sync_capsules(req: CapsuleBatchSyncRequest):
         "url": "/api/v1/handover/batch_sync",
         "ip": req.device_id,
         "user_agent": req.operator_id or "Flutter",
-        "latency": "110ms",
+        "latency": f"{int((time.time() - sync_started) * 1000)}ms",
         "summary": f"Batch Sync: {len(req.capsules)} capsules | Status: {sync_status} (Critical Conflict: {has_critical_conflict})"
     })
 
-    # 7. Return 200 OK wrapper response
+    # 7. Queue the background pipeline (embedding, agents). A failure here never fails the sync.
+    pipeline_run_id = None
+    try:
+        queued = await asyncio.wait_for(
+            asyncio.to_thread(publish_handover_synced, session_id, [c.uuid for c in req.capsules],
+                              req.unit_name, req.device_id),
+            timeout=5.0)
+        pipeline_run_id = run_id_for(session_id) if queued else None
+    except Exception as err:  # noqa: BLE001
+        logger.warning("pipeline publish skipped: %s", type(err).__name__)
+
+    # 8. Return 200 OK wrapper response
     return CapsuleBatchSyncResponse(
         sync_status=sync_status,
         synced_count=len(req.capsules),
         has_critical_conflict=has_critical_conflict,
         conflicts=conflicts,
         summary=summary,
-        processed_at=now_utc
+        processed_at=now_utc,
+        pipeline_run_id=pipeline_run_id,
+        handover_id=session_id
     )
 
 
 # ==========================================
 # Realtime Dashboard Endpoints
 # ==========================================
+
+_brief_cache: Dict[str, Any] = {}     # handover_id -> (fetched_at, brief dict or None)
+_BRIEF_FIELDS = ("headline", "items", "citation_details", "model", "guardrail_status", "guardrails", "run_id", "created_at")
+
+
+def _fetch_briefs(ids: List[str]) -> Dict[str, Optional[dict]]:
+    """Pipeline briefs for recent events. A found brief is cached 30 s; a missing one is re-checked every 2 s."""
+    out, now, missing = {}, time.time(), []
+    for i in ids:
+        hit = _brief_cache.get(i)
+        if hit and (now - hit[0] < (30 if hit[1] else 2)):
+            out[i] = hit[1]
+        else:
+            missing.append(i)
+    if missing and firestore_db:
+        try:
+            for snap in firestore_db.get_all([firestore_db.collection("handover_briefs").document(i) for i in missing]):
+                doc = snap.to_dict() if snap.exists else None
+                _brief_cache[snap.id] = (now, doc)
+                out[snap.id] = doc
+        except Exception as err:  # noqa: BLE001 - the brief is an enhancement; the stream must still work
+            logger.warning("brief lookup failed: %s", type(err).__name__)
+    return out
+
 
 @app.get("/api/v1/dashboard/stream")
 async def get_dashboard_stream():
@@ -437,7 +545,9 @@ async def get_dashboard_stream():
     - Shift Handover Syncs
     - Animated Cloud Resource Topology Flow
     """
-    cloud_logs = fetch_and_parse_cloud_logs(max_entries=40)
+    # blocking Google API calls run in a worker thread so they never stall other requests on the event loop
+    cloud_logs = await asyncio.to_thread(fetch_and_parse_cloud_logs, 40)
+    ledger_count = await asyncio.to_thread(get_firestore_ledger_count)
 
     # Merge in-memory activity with cloud logs
     merged_ids = set()
@@ -467,15 +577,24 @@ async def get_dashboard_stream():
             "status": "healthy" if len(anomalies) < 10 else "degraded",
             "service": "baton-api",
             "region": "asia-southeast1",
-            "active_revision": "baton-api-00004-rtj",
+            "active_revision": os.getenv("K_REVISION", "local"),
             "anomalies_detected": len(anomalies),
             "recent_calls": len(combined_logs)
         },
         "vertex_ai": {
             "status": "active",
-            "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-            "location": os.getenv("VERTEX_LOCATION", "us-central1"),
-            "audio_engine": os.getenv("TRANSCRIBE_ENGINE", "gemini")
+            "model": get_settings().gemini_model,
+            "location": get_settings().gemini_location,
+            "fast_model": get_settings().gemini_fast_model,
+            "fast_location": get_settings().gemini_fast_location,
+            "embedding_model": get_settings().embedding_model,
+            "audio_engine": get_settings().transcribe_engine
+        },
+        "pipeline": {
+            "topic": "baton-handover-events",
+            "worker": "baton-agents",
+            "region": "asia-southeast1",
+            "brief_source": "adk-pipeline" if os.getenv("LEGACY_BRIEF_INLINE", "true").strip().lower() != "true" else "inline-gemini",
         },
         "safety_engine": {
             "status": "enforcing",
@@ -485,12 +604,21 @@ async def get_dashboard_stream():
             "status": "persisted" if firestore_db else "in_memory",
             "database": "(default)",
             "location": "asia-southeast1",
-            "ledger_count": get_firestore_ledger_count()
+            "ledger_count": ledger_count
         }
     }
 
+    events = [dict(e) for e in dashboard_telemetry_stream]
+    briefs = await asyncio.to_thread(_fetch_briefs, [e["id"] for e in events[:5] if e.get("id")])
+    for e in events:
+        b = briefs.get(e.get("id"))
+        if b:
+            e["brief"] = {k: b.get(k) for k in _BRIEF_FIELDS}
+            if e.get("sync_status") != "ACKNOWLEDGED":     # an acknowledged event keeps its acknowledgement text
+                e["summary"] = b.get("headline") or e.get("summary")
+
     return {
-        "events": list(dashboard_telemetry_stream),
+        "events": events,
         "cloud_logs": combined_logs[:30],
         "anomalies": anomalies[:10],
         "transcriptions": transcriptions[:15],
@@ -500,32 +628,33 @@ async def get_dashboard_stream():
             "total_anomalies": len(anomalies),
             "total_syncs": len(syncs),
             "total_substantive": len(combined_logs),
-            "firestore_ledger_count": get_firestore_ledger_count()
+            "firestore_ledger_count": ledger_count
         },
         "total_events": len(dashboard_telemetry_stream),
         "server_time": datetime.now(timezone.utc).isoformat(),
         "dcs_telemetry": MOCK_DCS_TELEMETRY,
         "active_permits": MOCK_ACTIVE_PERMITS,
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        "model": get_settings().gemini_model
     }
 
 
 @app.post("/api/v1/dashboard/clear_alert")
-async def clear_dashboard_alert():
+async def clear_dashboard_alert(x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
     """
     Clears the active R1 conflict alert from the telemetry stream,
-    transitioning the safety engine node to nominal state.
+    transitioning the safety engine node to nominal state. Requires X-Aegis-Key.
     """
+    require_aegis_key(x_aegis_key)
     if dashboard_telemetry_stream:
         latest = dashboard_telemetry_stream[0]
         latest["has_critical_conflict"] = False
         latest["sync_status"] = "ACKNOWLEDGED"
-        latest["summary"] = "Supervisor Arun acknowledged and mitigated active isolation alert. Safety interlock clear."
+        latest["summary"] = "Supervisor acknowledged the active isolation alert. The conflict stays open until the equipment is re-verified in the field."
         if "conflicts" in latest:
             for c in latest["conflicts"]:
-                c["status"] = "MITIGATED"
+                c["status"] = "ACKNOWLEDGED"   # acknowledged is not resolved
         save_batch_sync_event(latest)
-    return {"status": "ACKNOWLEDGED", "message": "Alert acknowledged and cleared by supervisor."}
+    return {"status": "ACKNOWLEDGED", "message": "Alert acknowledged by supervisor. The underlying conflict remains open until re-verified."}
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -555,17 +684,30 @@ def health_check():
 
 
 
+def _distinct_conflicts(conflicts: List[SafetyConflict]) -> List[SafetyConflict]:
+    """One entry per (rule, title): the same conflict raised by the log and by a voice note is one conflict."""
+    seen, out = set(), []
+    for c in conflicts:
+        k = (c.rule_id, c.title)
+        if k not in seen:
+            seen.add(k)
+            out.append(c)
+    return out
+
+
 @app.post("/api/handover/start", response_model=HandoverSession)
-def start_handover(req: HandoverRequest):
+def start_handover(req: HandoverRequest, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    require_app_key(x_aegis_key)
     session_id = f"session-{uuid.uuid4().hex[:8]}"
 
     # 1. Gemini Agent: Fact Extraction
     facts = agent_service.extract_facts(req.log_text, req.voice_transcripts)
 
-    # 2. Deterministic Safety Rules Engine Evaluation
-    conflicts = rules_engine.evaluate(facts, req.plant_sensor_state, req.active_permits)
+    # 2. Deterministic Safety Rules Engine Evaluation. The plant state and permits are the server's own feed:
+    #    a caller must not be able to decide the verdict by sending the state it wants (req fields are ignored).
+    conflicts = _distinct_conflicts(rules_engine.evaluate(facts, MOCK_DCS_TELEMETRY, MOCK_ACTIVE_PERMITS))
 
-    # 3. Gemini Agent: Generate Gap Questions if conflicts exist
+    # 3. Gap questions (one per distinct conflict)
     questions = agent_service.generate_gap_questions(conflicts, facts, req.target_language)
 
     # 4. Determine initial status
@@ -593,11 +735,45 @@ def start_handover(req: HandoverRequest):
 
 
 @app.get("/api/handover/{session_id}", response_model=HandoverSession)
-def get_session(session_id: str):
+def get_session(session_id: str, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    require_app_key(x_aegis_key)
     session = get_handover_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
     return session
+
+
+@app.post("/api/handover/{session_id}/interview", response_model=HandoverSession)
+def start_interview(session_id: str, language: str = "en", x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    """Interview step for a handover created by batch_sync: the outgoing operator is asked about each distinct
+    open conflict. Idempotent: asking again returns the same questions."""
+    require_app_key(x_aegis_key)
+    session = get_handover_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Handover session not found")
+    if session.status == "COMPLETED":
+        return session
+    if not session.questions:
+        lang = language if language in ("en", "ta", "ms", "zh") else "en"
+        session.questions = agent_service.generate_gap_questions(_distinct_conflicts(session.conflicts), session.facts, lang)
+    if session.questions and not all(q.answered for q in session.questions):
+        session.status = "NEEDS_CLARIFICATION"
+    elif session.brief is None:
+        session.brief = agent_service.compose_brief(_distinct_conflicts(session.conflicts), session.facts, "en")
+        session.status = "READY_FOR_BRIEF"
+    save_handover_session(session)
+    return session
+
+
+@app.get("/api/handover/{session_id}/brief")
+async def get_pipeline_brief(session_id: str, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    """The agent pipeline's cited brief for this handover, once it is ready (it is written about 10 to 20 s after a sync)."""
+    require_app_key(x_aegis_key)
+    got = await asyncio.to_thread(_fetch_briefs, [session_id])
+    b = got.get(session_id)
+    if not b:
+        return {"ready": False, "brief": None}
+    return {"ready": True, "brief": {k: b.get(k) for k in _BRIEF_FIELDS}}
 
 
 class AnswerPayload(BaseModel):
@@ -605,30 +781,35 @@ class AnswerPayload(BaseModel):
 
 
 @app.post("/api/handover/{session_id}/answer", response_model=HandoverSession)
-def submit_answers(session_id: str, payload: AnswerPayload):
+def submit_answers(session_id: str, payload: AnswerPayload, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    require_app_key(x_aegis_key)
     session = get_handover_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
 
     # Process answers and convert to facts
     for q in session.questions:
-        if q.id in payload.answers:
-            q.answer_text = payload.answers[q.id]
+        text = (payload.answers.get(q.id) or "").strip()[:500]
+        if text and not q.answered:
+            q.answer_text = text
             q.answered = True
             session.facts.append(
                 Fact(
                     id=f"FACT-ANS-{q.id}",
-                    text=f"Operator Verified: {payload.answers[q.id]}",
+                    text=f"Operator Verified: {text}",
                     category="OPERATOR_CLARIFICATION",
                     source_type="OPERATOR_ANSWER",
                     source_id=q.id
                 )
             )
 
-    # Re-evaluate safety rules with new clarification facts
-    # (If operator clarifies, some conflicts may be resolved)
-    session.brief = agent_service.compose_brief(session.conflicts, session.facts, "en")
-    session.status = "READY_FOR_BRIEF"
+    # An answer is a statement, not a verdict: the rules are not re-run and no conflict changes status here.
+    # The brief is only released once every question has an answer.
+    if all(q.answered for q in session.questions):
+        session.brief = agent_service.compose_brief(_distinct_conflicts(session.conflicts), session.facts, "en")
+        session.status = "READY_FOR_BRIEF"
+    else:
+        session.status = "NEEDS_CLARIFICATION"
     save_handover_session(session)
 
     return session
@@ -637,10 +818,12 @@ def submit_answers(session_id: str, payload: AnswerPayload):
 class AcknowledgePayload(BaseModel):
     item_id: str
     readback_text: str
+    supervisor: str
 
 
 @app.post("/api/handover/{session_id}/acknowledge", response_model=HandoverSession)
-def acknowledge_item(session_id: str, payload: AcknowledgePayload):
+def acknowledge_item(session_id: str, payload: AcknowledgePayload, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    require_app_key(x_aegis_key)
     session = get_handover_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
@@ -648,15 +831,22 @@ def acknowledge_item(session_id: str, payload: AcknowledgePayload):
     if not session.brief:
         raise HTTPException(status_code=400, detail="Brief not generated yet")
 
-    found = False
+    supervisor = payload.supervisor.strip()
+    readback = " ".join(payload.readback_text.split())
+    if not (1 <= len(supervisor) <= 60):
+        raise HTTPException(status_code=422, detail="The incoming supervisor's name is required.")
+    if len(readback.split()) < 3 or len(readback) > 500:
+        raise HTTPException(status_code=422, detail="A read-back must say the item back in your own words (at least 3 words).")
+
     for item in session.brief.items:
         if item.id == payload.item_id:
-            item.acknowledged = True
-            item.readback_text = payload.readback_text
-            found = True
+            if not item.acknowledged:                       # idempotent: a repeat does not overwrite who read it back
+                item.acknowledged = True
+                item.readback_text = readback
+                item.acknowledged_by = supervisor
+                item.acknowledged_at = datetime.now(timezone.utc).isoformat()
             break
-
-    if not found:
+    else:
         raise HTTPException(status_code=404, detail="Brief item not found")
 
     save_handover_session(session)
@@ -664,7 +854,8 @@ def acknowledge_item(session_id: str, payload: AcknowledgePayload):
 
 
 @app.post("/api/handover/{session_id}/complete")
-def complete_handover(session_id: str):
+def complete_handover(session_id: str, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+    require_app_key(x_aegis_key)
     session = get_handover_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Handover session not found")
@@ -684,11 +875,16 @@ def complete_handover(session_id: str):
             detail=f"Handover gated: {len(unack_critical)} CRITICAL safety item(s) require read-back acknowledgment before transfer."
         )
 
+    names = [i.acknowledged_by for i in session.brief.items if i.acknowledged_by]
     session.status = "COMPLETED"
     session.brief.completion_status = "COMPLETED"
+    session.brief.incoming_supervisor = names[-1] if names else session.brief.incoming_supervisor
     save_handover_session(session)
 
-    return {"status": "COMPLETED", "message": "Handover responsibility successfully transferred."}
+    # Transferring responsibility is not resolving: every conflict keeps its status.
+    still_open = sum(1 for c in _distinct_conflicts(session.conflicts) if c.status != "RESOLVED")
+    return {"status": "COMPLETED", "message": "Handover responsibility transferred.", "incoming_supervisor": session.brief.incoming_supervisor,
+            "open_conflicts": still_open}
 
 
 # Rate Limiter setup
@@ -710,6 +906,15 @@ def check_rate_limit(client_ip: str) -> bool:
     rate_limit_db[client_ip].append(now)
     return True
 
+def _asset_hint_sentence(asset_hints: Optional[str]) -> str:
+    """Tell the model which equipment tags exist so it writes them exactly (hyphens and letters included)."""
+    tags = [h.strip() for h in (asset_hints or "").split(",") if h.strip()][:50]
+    if not tags:
+        return ""
+    return (" Equipment tags in this plant are written exactly like these, with the hyphen and the final letter: "
+            + ", ".join(tags) + ". Whenever the speaker names one of them, write it in exactly that form.")
+
+
 @app.post("/api/transcribe")
 @app.post("/transcribe")
 async def transcribe_audio(
@@ -723,10 +928,8 @@ async def transcribe_audio(
     start_time = time.time()
     client_ip = request.client.host if request.client else "unknown"
     
-    # 1. Auth check
-    expected_key = os.environ.get("AEGIS_API_KEY", "dev-key")
-    if not x_aegis_key or not secrets.compare_digest(x_aegis_key, expected_key):
-        raise HTTPException(status_code=401, detail={"error": {"code": "UNAUTHORIZED", "message": "Invalid or missing X-Aegis-Key"}})
+    # 1. Auth check (app scope: the web app transcribes too)
+    require_app_key(x_aegis_key)
         
     # 2. Rate Limit
     if not check_rate_limit(client_ip):
@@ -742,10 +945,10 @@ async def transcribe_audio(
         raise HTTPException(status_code=400, detail={"error": {"code": "BAD_REQUEST", "message": "Audio file is empty"}})
 
     # 4. Engine selection
-    engine = os.environ.get("TRANSCRIBE_ENGINE", "gemini")
-    
-    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "test-project")
-    region = "us-central1" # Regional endpoint for Vertex AI
+    settings = get_settings()
+    engine = settings.transcribe_engine
+    project_id = settings.project or "test-project"
+    model_used = None  # set to the model that actually answered
     
     transcript_text = ""
     detected_lang = None
@@ -757,9 +960,6 @@ async def transcribe_audio(
     
     try:
         if engine == "gemini":
-            client = genai.Client(vertexai=True, project=project_id, location=region)
-            model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-
             # Robust audio mime type detection using magic bytes and headers
             mime = "audio/mp4"
             if audio_content.startswith(b"RIFF"):
@@ -775,14 +975,19 @@ async def transcribe_audio(
             elif audio.content_type and audio.content_type.startswith("audio/"):
                 mime = audio.content_type
 
-            response = client.models.generate_content(
-                model=model_id,
-                contents=[
-                    genai.types.Part.from_bytes(data=audio_content, mime_type=mime),
+            response = await asyncio.to_thread(
+                llm_generate,
+                "transcribe",
+                [
+                    genai_types.Part.from_bytes(data=audio_content, mime_type=mime),
                     "Transcribe the following audio accurately. If it is in a non-English language (such as Tamil or Malay), output the original transcription, and on a new line prefixed with 'TRANSLATION: ', output the English translation keeping asset tags (like P-201B) unchanged. If already English, just output the transcription."
-                ]
+                    + _asset_hint_sentence(asset_hints)
+                ],
+                max_output_tokens=4096,
+                timeout_s=60,
             )
-            raw_text = response.text.strip() if response.text else ""
+            model_used = response.model
+            raw_text = response.text
             if not raw_text:
                 no_speech = True
             elif "TRANSLATION:" in raw_text:
@@ -887,9 +1092,6 @@ async def transcribe_audio(
     # 5. Translation step if not English (if not already populated)
     if not english_text and not no_speech and detected_lang and not detected_lang.startswith("en"):
         try:
-            client = genai.Client(vertexai=True, project=project_id, location=region)
-            model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-            
             prompt = (
                 "Translate the following transcript to English. "
                 "Keep asset tags (like P-201B) unchanged. Return ONLY the plain English text.\n\n"
@@ -899,17 +1101,15 @@ async def transcribe_audio(
             if asset_hints:
                 prompt += f"\n\nContext/Hints for proper nouns: {asset_hints}"
                 
-            res = client.models.generate_content(
-                model=model_id,
-                contents=prompt
-            )
-            english_text = res.text.strip() if res.text else None
+            res = await asyncio.to_thread(llm_generate, "translate", prompt, max_output_tokens=2048, timeout_s=30)
+            english_text = res.text or None
         except Exception as e:
             logger.error(f"Translation failed: {e}")
             english_text = None
 
     latency_ms = int((time.time() - start_time) * 1000)
-    model_used = "chirp_3" if engine == "chirp3" else os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    if engine == "chirp3":
+        model_used = "chirp_3"
 
     print(
         f"Transcribe request_id={client_request_id} size={byte_size} "
@@ -943,4 +1143,9 @@ async def transcribe_audio(
         "latency_ms": latency_ms,
         "no_speech": no_speech
     }
+
+
+# New v1 endpoints (Ask the logs, device updates). Registered last so they can reuse auth and the rate limiter.
+from app.api_v1 import create_router  # noqa: E402
+app.include_router(create_router(require_aegis_key, check_rate_limit, require_app_key))
 

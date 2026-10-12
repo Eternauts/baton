@@ -44,6 +44,8 @@ class BriefItem(BaseModel):
     citations: List[str] = Field(default_factory=list)
     acknowledged: bool = False
     readback_text: Optional[str] = None
+    acknowledged_by: Optional[str] = None     # the incoming supervisor who read it back
+    acknowledged_at: Optional[str] = None
 
 
 class HandoverBrief(BaseModel):
@@ -104,4 +106,6 @@ class CapsuleBatchSyncResponse(BaseModel):
     conflicts: List[SafetyConflict] = Field(default_factory=list, description="List of detected safety conflicts")
     summary: str = Field(..., description="AI or deterministic safety brief summary")
     processed_at: str = Field(..., description="UTC timestamp of synchronization")
+    pipeline_run_id: Optional[str] = Field(default=None, description="Background pipeline run for this sync, if one was queued")
+    handover_id: Optional[str] = Field(default=None, description="Id of the handover this sync created (the same capsules always give the same id)")
 

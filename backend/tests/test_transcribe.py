@@ -72,8 +72,8 @@ def test_no_speech(mock_speech_client_class):
     assert data["text"] == ""
 
 @patch("app.main.SpeechClient")
-@patch("app.main.genai.Client")
-def test_translation_fallback(mock_genai, mock_speech_client_class):
+@patch("app.main.llm_generate")
+def test_translation_fallback(mock_generate, mock_speech_client_class):
     # Mock Speech Client returning French
     mock_client = MagicMock()
     mock_speech_client_class.return_value = mock_client
@@ -87,9 +87,7 @@ def test_translation_fallback(mock_genai, mock_speech_client_class):
     mock_client.recognize.return_value = mock_response
 
     # Mock Translation failure
-    mock_genai_client = MagicMock()
-    mock_genai.return_value = mock_genai_client
-    mock_genai_client.models.generate_content.side_effect = Exception("Translation API down")
+    mock_generate.side_effect = Exception("Translation API down")
     
     response = client.post("/api/transcribe", headers=get_headers(), files={"audio": ("test.wav", b"dummy")})
     
@@ -123,3 +121,61 @@ def test_rate_limit():
     # 31st request should fail
     response = client.post("/api/transcribe", headers=headers, files={"audio": ("test.wav", b"dummy")})
     assert response.status_code == 429
+
+
+@patch("app.main.llm_generate")
+def test_gemini_engine_reports_model_actually_used(mock_generate, monkeypatch):
+    from app.llm import GenerateResult
+    import app.main
+    app.main.rate_limit_db.clear()
+    monkeypatch.setenv("TRANSCRIBE_ENGINE", "gemini")
+    mock_generate.return_value = GenerateResult(
+        text="பம்ப் P-201B\nTRANSLATION: Pump P-201B", model="served-model-x", location="global", latency_ms=5)
+    response = client.post("/api/transcribe", headers=get_headers(), files={"audio": ("a.m4a", b"\x00\x00\x00\x18ftypM4A dummy")})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model"] == "served-model-x"
+    assert data["engine"] == "gemini"
+    assert data["english_text"] == "Pump P-201B"
+    assert "P-201B" in data["text"]
+
+
+def test_clear_alert_requires_key():
+    assert client.post("/api/v1/dashboard/clear_alert").status_code == 401
+    assert client.post("/api/v1/dashboard/clear_alert", headers={"X-Aegis-Key": "wrong"}).status_code == 401
+    ok = client.post("/api/v1/dashboard/clear_alert", headers=get_headers())
+    assert ok.status_code == 200 and ok.json()["status"] == "ACKNOWLEDGED"
+
+
+def test_no_key_configured_fails_closed(monkeypatch):
+    monkeypatch.delenv("AEGIS_API_KEY")
+    assert client.post("/api/v1/dashboard/clear_alert", headers={"X-Aegis-Key": "dev-key"}).status_code == 401
+    assert client.post("/api/v1/dashboard/clear_alert", headers={"X-Aegis-Key": ""}).status_code == 401
+
+
+def test_stream_still_open_and_reports_configured_model():
+    r = client.get("/api/v1/dashboard/stream")
+    assert r.status_code == 200
+    assert r.json()["model"] == "test-model"
+
+
+def test_clear_alert_never_claims_the_conflict_is_clear():
+    import app.main as m
+    from app.agents.guardrails import find_clearing_language
+    m.dashboard_telemetry_stream.appendleft({"id": "t", "has_critical_conflict": True, "sync_status": "CONFLICT_DETECTED", "summary": "x",
+                                             "conflicts": [{"rule_id": "R1", "status": "OPEN"}]})
+    with patch.object(m, "save_batch_sync_event"):
+        r = client.post("/api/v1/dashboard/clear_alert", headers=get_headers())
+    ev = m.dashboard_telemetry_stream[0]
+    assert r.json()["status"] == "ACKNOWLEDGED"
+    assert ev["conflicts"][0]["status"] == "ACKNOWLEDGED"               # acknowledged, not mitigated or resolved
+    assert find_clearing_language(ev["summary"]) == [] and find_clearing_language(r.json()["message"]) == []
+    m.dashboard_telemetry_stream.popleft()
+
+
+def test_asset_hints_are_passed_to_the_transcription_prompt():
+    import app.main as m
+    assert m._asset_hint_sentence(None) == "" and m._asset_hint_sentence(" , ") == ""
+    sentence = m._asset_hint_sentence("P-201B, V-102")
+    assert "P-201B, V-102" in sentence and "hyphen" in sentence
+    assert m._asset_hint_sentence(",".join(f"T-{i}00" for i in range(80))).count("T-") == 50   # capped
