@@ -1,0 +1,499 @@
+{
+  "url": "https://baton-api-545013329202.asia-southeast1.run.app",
+  "started": "2026-10-11T13:46:28.785627+00:00",
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "P-201B isolation mismatch",
+      "sync_ms": 701,
+      "handover_id": "batch-bc4a294a",
+      "run_id": "run-batch-bc4a294a",
+      "rules_in_sync": [
+        [
+          "R1",
+          "CRITICAL"
+        ],
+        [
+          "R4",
+          "WARNING"
+        ]
+      ],
+      "status": "completed",
+      "pipeline_ms": 12731,
+      "guardrails": [],
+      "brief_status": "passed",
+      "missing_verdicts": [],
+      "deterministic_rules_match_expected": true,
+      "false_critical": false,
+      "clearing_language": [],
+      "agent_ms": {
+        "SOPRetrieverLlm": 2599,
+        "HistoryRetrieverLlm": 2525,
+        "SafetyCrossCheckLlm": 2551,
+        "BriefingLlm": 2287,
+        "RulesGate": 34
+      },
+      "preserved": true
+    },
+    {
+      "id": "S2",
+      "name": "hot work next to an open flange (SIMOPS)",
+      "sync_ms": 319,
+      "handover_id": "batch-188d7c42",
+      "run_id": "run-batch-188d7c42",
+      "rules_in_sync": [
+        [
+          "R2",
+          "CRITICAL"
+        ],
+        [
+          "R4",
+          "WARNING"
+        ]
+      ],
+      "status": "completed",
+      "pipeline_ms": 12282,
+      "guardrails": [],
+      "brief_status": "passed",
+      "missing_verdicts": [],
+      "deterministic_rules_match_expected": true,
+      "false_critical": false,
+      "clearing_language": [],
+      "agent_ms": {
+        "SOPRetrieverLlm": 2842,
+        "HistoryRetrieverLlm": 2486,
+        "SafetyCrossCheckLlm": 2183,
+        "BriefingLlm": 1938,
+        "RulesGate": 14
+      },
+      "preserved": true
+    },
+    {
+      "id": "S3",
+      "name": "uneventful log",
+      "sync_ms": 274,
+      "handover_id": "batch-85bdaece",
+      "run_id": "run-batch-85bdaece",
+      "rules_in_sync": [
+        [
+          "R4",
+          "WARNING"
+        ]
+      ],
+      "status": "completed",
+      "pipeline_ms": 14605,
+      "guardrails": [],
+      "brief_status": "passed",
+      "missing_verdicts": [],
+      "deterministic_rules_match_expected": true,
+      "false_critical": false,
+      "clearing_language": [],
+      "agent_ms": {
+        "SOPRetrieverLlm": 3606,
+        "HistoryRetrieverLlm": 2633,
+        "SafetyCrossCheckLlm": 4691,
+        "BriefingLlm": 1441,
+        "RulesGate": 15
+      },
+      "preserved": true
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q01",
+      "q": "What is the isolation standard for hydrocarbon service above",
+      "expected": [
+        "SOP-ISO-04"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-ISO-04",
+        "SOP-PSV-02",
+        "SOP-PSV-02",
+        "SOP-PMP-05",
+        "SOP-ISO-04",
+        "SOP-PSV-02"
+      ],
+      "http": 200,
+      "wall_ms": 4264,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-ISO-04"
+      ],
+      "citations_valid": true,
+      "latency_ms": 4019,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q02",
+      "q": "How long is a hot work permit valid and who revalidates it a",
+      "expected": [
+        "SOP-HW-01"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-HW-01",
+        "SOP-HW-01",
+        "SOP-HW-01",
+        "SOP-HW-01",
+        "SOP-HW-01",
+        "SOP-HW-01"
+      ],
+      "http": 200,
+      "wall_ms": 4152,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-HW-01"
+      ],
+      "citations_valid": true,
+      "latency_ms": 3819,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q03",
+      "q": "What compensating measures are needed while a fixed gas dete",
+      "expected": [
+        "SOP-GD-03"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-GD-03",
+        "SOP-GD-03",
+        "SOP-HW-01",
+        "SOP-GD-03",
+        "SOP-ESD-06",
+        "BUL-2026-07"
+      ],
+      "http": 200,
+      "wall_ms": 3929,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-GD-03"
+      ],
+      "citations_valid": true,
+      "latency_ms": 3710,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q04",
+      "q": "Can hot work resume on the stripper platform if GD-311 is by",
+      "expected": [
+        "BUL-2026-07"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "BUL-2026-07",
+        "SOP-GD-03",
+        "SOP-HW-01",
+        "SOP-GD-03",
+        "SOP-HW-01",
+        "BUL-2026-07"
+      ],
+      "http": 200,
+      "wall_ms": 7066,
+      "answer_cites_expected": true,
+      "cited": [
+        "BUL-2026-07"
+      ],
+      "citations_valid": true,
+      "latency_ms": 6754,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q05",
+      "q": "What must be done before a relief valve PSV is removed for t",
+      "expected": [
+        "SOP-PSV-02"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-PSV-02",
+        "SOP-PSV-02",
+        "SOP-PSV-02",
+        "SOP-PSV-02",
+        "SOP-PMP-05",
+        "SOP-ISO-04"
+      ],
+      "http": 200,
+      "wall_ms": 5989,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-PSV-02"
+      ],
+      "citations_valid": true,
+      "latency_ms": 5760,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q06",
+      "q": "At what vibration level must a field operator check a feed p",
+      "expected": [
+        "MAN-P101",
+        "SOP-PMP-05"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "MAN-P101",
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "MAN-P101",
+        "MAN-P101",
+        "seed-h3"
+      ],
+      "http": 200,
+      "wall_ms": 3580,
+      "answer_cites_expected": true,
+      "cited": [
+        "MAN-P101"
+      ],
+      "citations_valid": true,
+      "latency_ms": 3363,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q07",
+      "q": "What should be verified before replacing the mechanical seal",
+      "expected": [
+        "SOP-PMP-05",
+        "SOP-ISO-04"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "batch-bc4a294a",
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "SOP-PMP-05"
+      ],
+      "http": 200,
+      "wall_ms": 9156,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-PMP-05"
+      ],
+      "citations_valid": true,
+      "latency_ms": 8921,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q08",
+      "q": "How long may ESDV-301 stay bypassed and what must be monitor",
+      "expected": [
+        "SOP-ESD-06"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "seed-h6",
+        "seed-h2"
+      ],
+      "http": 200,
+      "wall_ms": 13061,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-ESD-06"
+      ],
+      "citations_valid": true,
+      "latency_ms": 12858,
+      "status": "completed",
+      "guardrails": [
+        "Ask:invalid_output"
+      ],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q09",
+      "q": "What happened with the P-201B seal and vibration over the re",
+      "expected": [
+        "seed-h1",
+        "seed-h3",
+        "seed-h5",
+        "seed-h7"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "batch-bc4a294a",
+        "seed-h5",
+        "seed-h3",
+        "seed-h1",
+        "SOP-PMP-05",
+        "seed-h7"
+      ],
+      "http": 200,
+      "wall_ms": 9742,
+      "answer_cites_expected": true,
+      "cited": [
+        "batch-bc4a294a",
+        "seed-h1",
+        "seed-h3",
+        "seed-h5"
+      ],
+      "citations_valid": true,
+      "latency_ms": 8154,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q10",
+      "q": "Was ESDV-301 bypassed recently and for what reason?",
+      "expected": [
+        "seed-h6"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "SOP-ESD-06",
+        "seed-h6"
+      ],
+      "http": 200,
+      "wall_ms": 4525,
+      "answer_cites_expected": true,
+      "cited": [
+        "seed-h6"
+      ],
+      "citations_valid": true,
+      "latency_ms": 4345,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "en",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q11",
+      "q": "TK-501 அளவு சமீபத்திய ஷிப்டுகளில் எப்படி இருந்தது?",
+      "expected": [
+        "seed-h2",
+        "seed-h4",
+        "seed-h6"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-ESD-06",
+        "seed-h2",
+        "seed-h4",
+        "seed-h6",
+        "SOP-ESD-06",
+        "batch-bc4a294a"
+      ],
+      "http": 200,
+      "wall_ms": 5915,
+      "answer_cites_expected": true,
+      "cited": [
+        "seed-h2",
+        "seed-h4",
+        "seed-h6"
+      ],
+      "citations_valid": true,
+      "latency_ms": 5729,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "ta",
+      "has_verdicts": true,
+      "note": null
+    },
+    {
+      "id": "Q12",
+      "q": "Bagaimanakah prosedur mengasingkan pam sebelum menukar seal?",
+      "expected": [
+        "SOP-PMP-05",
+        "SOP-ISO-04"
+      ],
+      "retrieval_hit": true,
+      "top_sources": [
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "SOP-PMP-05",
+        "batch-bc4a294a"
+      ],
+      "http": 200,
+      "wall_ms": 7313,
+      "answer_cites_expected": true,
+      "cited": [
+        "SOP-PMP-05"
+      ],
+      "citations_valid": true,
+      "latency_ms": 7067,
+      "status": "completed",
+      "guardrails": [],
+      "lang": "ms",
+      "has_verdicts": true,
+      "note": null
+    }
+  ],
+  "declines": [
+    {
+      "id": "D01",
+      "declined_cleanly": true,
+      "latency_ms": 1229
+    },
+    {
+      "id": "D02",
+      "declined_cleanly": true,
+      "latency_ms": 1269
+    }
+  ],
+  "summary": {
+    "retrieval_hit_rate": "12/12",
+    "answer_cites_expected": "12/12",
+    "citation_validity": "12/12",
+    "asks_fallback": "0/12",
+    "ask_guardrail_triggers": 1,
+    "declines_clean": "2/2",
+    "verdict_preservation": "3/3",
+    "pipeline_fallbacks": "0/3",
+    "pipeline_guardrail_triggers": 0,
+    "ask_latency": "n=12 median 5760 p90 8921 max 12858 ms",
+    "pipeline_latency": "n=3 median 12731 p90 14605 max 14605 ms",
+    "agent_latency": {
+      "SOPRetrieverLlm": "median 2842 max 3606 ms",
+      "HistoryRetrieverLlm": "median 2525 max 2633 ms",
+      "SafetyCrossCheckLlm": "median 2551 max 4691 ms",
+      "BriefingLlm": "median 1938 max 2287 ms",
+      "RulesGate": "median 15 max 34 ms"
+    }
+  },
+  "finished": "2026-10-11T13:48:30.311873+00:00"
+}

@@ -1,0 +1,34 @@
+{
+  "_note": "Source IDs are the knowledge_chunks source_id values: SOP file names for procedures, seed-h1..h7 for the seeded handovers (scripts/seed_handovers.py). A question passes if at least one expected source is retrieved/cited.",
+  "unit": "HYDROCRACKER-01",
+  "questions": [
+    {"id": "Q01", "text": "What is the isolation standard for hydrocarbon service above 10 barg?", "expected": ["SOP-ISO-04"]},
+    {"id": "Q02", "text": "How long is a hot work permit valid and who revalidates it at shift handover?", "expected": ["SOP-HW-01"]},
+    {"id": "Q03", "text": "What compensating measures are needed while a fixed gas detector is bypassed?", "expected": ["SOP-GD-03"]},
+    {"id": "Q04", "text": "Can hot work resume on the stripper platform if GD-311 is bypassed but a portable monitor is in place?", "expected": ["BUL-2026-07"], "note": "the bulletin supersedes SOP-GD-03 section 2 for area 3C"},
+    {"id": "Q05", "text": "What must be done before a relief valve PSV is removed for testing?", "expected": ["SOP-PSV-02"]},
+    {"id": "Q06", "text": "At what vibration level must a field operator check a feed pump, and how soon?", "expected": ["MAN-P101", "SOP-PMP-05"]},
+    {"id": "Q07", "text": "What should be verified before replacing the mechanical seal on pump P-201B?", "expected": ["SOP-PMP-05", "SOP-ISO-04"], "asset_tag": "P-201B"},
+    {"id": "Q08", "text": "How long may ESDV-301 stay bypassed and what must be monitored on TK-501 meanwhile?", "expected": ["SOP-ESD-06"]},
+    {"id": "Q09", "text": "What happened with the P-201B seal and vibration over the recent shifts?", "expected": ["seed-h1", "seed-h3", "seed-h5", "seed-h7"], "asset_tag": "P-201B", "history": true},
+    {"id": "Q10", "text": "Was ESDV-301 bypassed recently and for what reason?", "expected": ["seed-h6"], "history": true},
+    {"id": "Q11", "text": "TK-501 அளவு சமீபத்திய ஷிப்டுகளில் எப்படி இருந்தது?", "lang": "ta", "expected": ["seed-h2", "seed-h4", "seed-h6"], "history": true, "note": "Tamil: how was the TK-501 level in recent shifts"},
+    {"id": "Q12", "text": "Bagaimanakah prosedur mengasingkan pam sebelum menukar seal?", "lang": "ms", "expected": ["SOP-PMP-05", "SOP-ISO-04"], "note": "Malay: how to isolate a pump before replacing the seal"}
+  ],
+  "decline": [
+    {"id": "D01", "text": "What is the weather?"},
+    {"id": "D02", "text": "Who won the cricket match yesterday?"}
+  ],
+  "scenarios": [
+    {"id": "S1", "name": "P-201B isolation mismatch",
+     "capsules": [{"category": "ISOLATION", "asset_tag": "P-201B", "asserted_state": "ISOLATED", "text_transcript": "Pump P-201B isolated and lock applied at 10:30. Seal still looked wet earlier."}],
+     "expected_verdicts": [{"rule_id": "R1", "severity": "CRITICAL"}, {"rule_id": "R4", "severity": "WARNING"}]},
+    {"id": "S2", "name": "hot work next to an open flange (SIMOPS)",
+     "capsules": [{"category": "EQUIPMENT", "asset_tag": "L-210", "asserted_state": "OPEN", "text_transcript": "Flange on line L-210 opened for inspection, work continuing."}],
+     "expected_verdicts": [{"rule_id": "R2", "severity": "CRITICAL"}, {"rule_id": "R4", "severity": "WARNING"}]},
+    {"id": "S3", "name": "uneventful log",
+     "capsules": [{"category": "EQUIPMENT", "asset_tag": "V-102", "asserted_state": "CLOSED", "text_transcript": "Drum V-102 level control back in auto, valve closed, readings normal."}],
+     "expected_verdicts": [{"rule_id": "R4", "severity": "WARNING"}],
+     "must_not_have_critical": true}
+  ]
+}

@@ -1,38 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
+  <!-- Replaced by the value of `--base-href` at build time (the site is served under /app/). -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Baton: shift-handover safety for process plants. Rules decide, AI reads and explains.">
+  <meta name="theme-color" content="#082A57">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="aegis_flow">
+  <meta name="apple-mobile-web-app-title" content="Baton">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>aegis_flow</title>
+  <title>Baton</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; height: 100%; background: #082A57; }
+    /* Shown until the app's first frame: the same navy and mark as the app's own splash, so nothing flashes. */
+    #baton-loader { position: fixed; inset: 0; display: grid; place-items: center; background: #082A57; z-index: 0; }
+    #baton-loader img { width: 96px; height: auto; animation: baton-pulse 1.6s ease-in-out infinite; }
+    @keyframes baton-pulse { 0%, 100% { opacity: .45; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { #baton-loader img { animation: none; } }
+  </style>
 </head>
 <body>
+  <div id="baton-loader" role="status" aria-label="Loading Baton"><img src="icons/baton-loader.png" alt="Baton"></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var l = document.getElementById('baton-loader');
+      if (l) l.remove();
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

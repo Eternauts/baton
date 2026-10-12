@@ -1,14 +1,15 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import '../../../../data/repositories/handover_repository.dart';
+import '../../../../core/data/handover_repository.dart';
+import '../../../../features/report/report_view_model.dart';
+import '../../../../features/report/views/report_screen.dart';
+import '../../../../features/feed/feed_view_model.dart';
+import '../../../../features/feed/views/feed_screen.dart';
+import '../../../../features/handover/handover_view_model.dart';
+import '../../../../features/handover/views/handover_screen.dart';
+import '../../../../core/ai/on_device_ai_service.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets/industrial_header.dart';
-import '../../field_capture/view_models/field_capture_view_model.dart';
-import '../../field_capture/views/field_capture_screen.dart';
-import '../../pending_records/view_models/pending_records_view_model.dart';
-import '../../pending_records/views/pending_records_screen.dart';
-import '../../gemma_assistant/view_models/gemma_assistant_view_model.dart';
-import '../../gemma_assistant/views/gemma_assistant_screen.dart';
-import '../../scada_telemetry/views/scada_monitor_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
   final HandoverRepository repository;
@@ -24,106 +25,98 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
-  bool _isOffline = true; // Default to offline-first rig state
+  bool _isOffline = true;
 
-  late final FieldCaptureViewModel _fieldCaptureViewModel;
-  late final PendingRecordsViewModel _pendingRecordsViewModel;
-  late final GemmaAssistantViewModel _gemmaAssistantViewModel;
+  late final ReportViewModel _reportViewModel;
+  late final FeedViewModel _feedViewModel;
+  late final HandoverViewModel _handoverViewModel;
 
   @override
   void initState() {
     super.initState();
-    _fieldCaptureViewModel = FieldCaptureViewModel(repository: widget.repository);
-    _pendingRecordsViewModel = PendingRecordsViewModel(repository: widget.repository);
-    _gemmaAssistantViewModel = GemmaAssistantViewModel(repository: widget.repository);
+    _feedViewModel = FeedViewModel(repository: widget.repository);
+    _handoverViewModel = HandoverViewModel(repository: widget.repository);
+    _reportViewModel = ReportViewModel(
+      repository: widget.repository,
+      onSubmitted: () => _feedViewModel.loadFeed(isOnline: !_isOffline),
+    );
 
     _initData();
   }
 
   Future<void> _initData() async {
     final offline = await widget.repository.isOfflineMode();
+    OnDeviceAiService.instance.remoteAllowed = kIsWeb || !offline;
     setState(() {
       _isOffline = offline;
     });
-    await _pendingRecordsViewModel.loadRecords();
+    await _feedViewModel.loadFeed(isOnline: !_isOffline);
   }
 
   void _toggleOffline() async {
     final newStatus = !_isOffline;
     await widget.repository.setOfflineMode(newStatus);
+    OnDeviceAiService.instance.remoteAllowed = kIsWeb || !newStatus;
     setState(() {
       _isOffline = newStatus;
     });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          backgroundColor: AegisTheme.surfaceVariant,
-          content: Text(
-            newStatus
-                ? 'Switched to OFFLINE mode (Buffered in SQLite WAL)'
-                : 'Switched to ONLINE mode (Cloud Run & Google Storage active)',
-            style: TextStyle(
-              color: newStatus ? AegisTheme.amberWarning : AegisTheme.successGreen,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      );
-    }
+    _feedViewModel.loadFeed(isOnline: !newStatus);
   }
 
   @override
   void dispose() {
-    _fieldCaptureViewModel.dispose();
-    _pendingRecordsViewModel.dispose();
-    _gemmaAssistantViewModel.dispose();
+    _reportViewModel.dispose();
+    _feedViewModel.dispose();
+    _handoverViewModel.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: IndustrialHeader(
-        isOffline: _isOffline,
-        onToggleOffline: _toggleOffline,
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          FieldCaptureScreen(
-            viewModel: _fieldCaptureViewModel,
-            onSavedNavigateToRecords: () async {
-              await _pendingRecordsViewModel.loadRecords();
+    return ListenableBuilder(
+      listenable: _feedViewModel,
+      builder: (context, _) {
+        final pendingCount = _feedViewModel.offlineCount;
+
+        return Scaffold(
+          appBar: IndustrialHeader(
+            isOffline: _isOffline,
+            pendingCount: pendingCount,
+            onToggleOffline: _toggleOffline,
+            reportViewModel: _reportViewModel,
+            onSelectPreset: (presetText) {
               setState(() {
-                _currentIndex = 1;
+                _currentIndex = 0;
               });
+              _reportViewModel.updateTranscript(presetText);
             },
           ),
-          PendingRecordsScreen(
-            viewModel: _pendingRecordsViewModel,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              ReportScreen(
+                viewModel: _reportViewModel,
+                isOnline: !_isOffline,
+              ),
+              FeedScreen(
+                viewModel: _feedViewModel,
+                isOnline: !_isOffline,
+              ),
+              HandoverScreen(
+                viewModel: _handoverViewModel,
+                isOnline: !_isOffline,
+              ),
+            ],
           ),
-          GemmaAssistantScreen(
-            viewModel: _gemmaAssistantViewModel,
-          ),
-          ScadaMonitorScreen(
-            sensors: widget.repository.scadaSensors,
-            isOffline: _isOffline,
-            onToggleOffline: _toggleOffline,
-          ),
-        ],
-      ),
-      bottomNavigationBar: ListenableBuilder(
-        listenable: _pendingRecordsViewModel,
-        builder: (context, _) {
-          final offlineCount = _pendingRecordsViewModel.offlineCount;
-
-          return BottomNavigationBar(
+          bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
+              FocusManager.instance.primaryFocus?.unfocus(); // a keyboard left open by another tab must not follow you
               if (index == 1) {
-                _pendingRecordsViewModel.loadRecords();
+                _feedViewModel.loadFeed(isOnline: !_isOffline);
+              }
+              if (index == 2 && _handoverViewModel.step == HandoverStep.intro) {
+                _handoverViewModel.loadShift();
               }
               setState(() {
                 _currentIndex = index;
@@ -131,31 +124,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
             },
             items: [
               const BottomNavigationBarItem(
-                icon: Icon(Icons.edit_note_rounded),
-                label: 'Field Capture',
+                icon: Icon(Icons.mic_none_rounded),
+                activeIcon: Icon(Icons.mic_rounded),
+                label: 'Report',
               ),
               BottomNavigationBarItem(
                 icon: Badge(
-                  isLabelVisible: offlineCount > 0,
-                  label: Text('$offlineCount'),
+                  isLabelVisible: pendingCount > 0,
+                  label: Text('$pendingCount'),
                   backgroundColor: AegisTheme.amberWarning,
                   textColor: Colors.black,
-                  child: const Icon(Icons.sync_alt_rounded),
+                  child: const Icon(Icons.dynamic_feed_outlined),
                 ),
-                label: 'Records & Sync',
+                activeIcon: const Icon(Icons.dynamic_feed_rounded),
+                label: 'Feed',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.smart_toy_outlined),
-                label: 'Gemma Assistant',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.precision_manufacturing_rounded),
-                label: 'SCADA & Architecture',
+                icon: Icon(Icons.swap_horiz_rounded),
+                activeIcon: Icon(Icons.swap_horizontal_circle_rounded),
+                label: 'Handover',
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

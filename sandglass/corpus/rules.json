@@ -1,0 +1,85 @@
+{
+  "aliases": {
+    "P-101A": [
+      "pump A",
+      "feed pump A"
+    ],
+    "P-101B": [
+      "pump B",
+      "feed pump B"
+    ],
+    "PSV-104": [
+      "relief valve 104"
+    ],
+    "PSV-105": [
+      "relief valve 105"
+    ],
+    "GD-311": [
+      "gas head 311"
+    ],
+    "GD-312": [
+      "gas head 312"
+    ]
+  },
+  "synonyms": [
+    [
+      "psv",
+      "relief valve",
+      "safety valve",
+      "pressure safety valve"
+    ],
+    [
+      "hot work",
+      "welding",
+      "grinding",
+      "cutting",
+      "open flame"
+    ],
+    [
+      "bypass",
+      "bypassed",
+      "inhibit",
+      "inhibited",
+      "override"
+    ],
+    [
+      "isolation",
+      "isolated",
+      "lockout",
+      "loto",
+      "lock out",
+      "tagout"
+    ],
+    [
+      "gas detector",
+      "gas head",
+      "detector"
+    ],
+    [
+      "handover",
+      "shift change",
+      "turnover"
+    ],
+    [
+      "lel",
+      "lower explosive limit",
+      "flammable gas"
+    ],
+    [
+      "how long",
+      "time limit",
+      "duration",
+      "maximum",
+      "at most",
+      "hours",
+      "expire"
+    ]
+  ],
+  "type_boost": {
+    "BULLETIN": 1.2,
+    "SOP": 1.1,
+    "MANUAL": 1.0,
+    "NOTE": 0.85
+  },
+  "expansion_weight": 0.5
+}
