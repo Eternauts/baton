@@ -1,119 +1,179 @@
-# Baton: The Shift-Handover Guardian
+<div align="center">
 
-**Baton** is an AI-powered shift-handover guardian built to eliminate process-safety accidents in continuous manufacturing and industrial environments. This repository contains the MVP architecture developed for the **AI Builder Cup 2026**.
+<img src="aegis_flow/web/icons/Icon-512.png" alt="Baton" width="96" />
 
-## 🛡️ Core Philosophy
-*"Rules decide, Gemini reads and explains, people accept."*
+# Baton
 
-Baton prevents accidents by catching conflicting states (like an active hot-work permit next to an open gas line) during shift handovers. It does this by combining **deterministic safety rules** with **Gemini AI** to parse unstructured logs, permits, and multilingual voice notes.
+**Speak it. Hand it over.**
 
-## 🚀 Architecture overview
+A shift-handover safety system for process plants. Operators say what they saw; deterministic rules check it against the plant; Gemini agents read, explain and brief; people accept.
 
-- **Backend (`/backend`)**: FastAPI (Python 3.12)
-- **AI Agent Engine**: Gemini 3.5 & 3.8 Flash via `google-genai` SDK
-- **Safety Engine**: Deterministic Python rules evaluating live plant state against NLP-extracted facts.
-- **Deployment Pipeline**: `cloudbuild.yaml` configured for Google Cloud Run continuous deployment.
+**Team ETERNAUTS · Google Cloud AI Builder Cup 2026**
 
-## 🚀 Features & Implementation Status
+[**Try the app**](https://baton-app-vapgvudrgq-as.a.run.app) · [Control Room dashboard](https://baton-api-545013329202.asia-southeast1.run.app/dashboard) · [Architecture and agents](backend/AGENTS.md)
 
-| Feature | Component / Service | Status | Description |
-| :--- | :--- | :---: | :--- |
-| **Speech-to-Text Transcription** | Google Cloud Speech-to-Text V2 (`chirp_3`) | ✅ Completed | Synchronous speech recognition using Chirp 3 in multi-region `us` with auto-decoding and audio duration calculation. |
-| **Language Auto-Detection** | Speech-to-Text V2 / Gemini Fallback | ✅ Completed | Automatic source language detection (`languages=auto`) or explicit language code fallback (e.g. `ta-IN`, `en-US`). |
-| **Speech Adaptation** | STT V2 Phrase Sets & Prompt Context | ✅ Completed | Equipment/asset tags (`asset_hints` e.g. `P-201B`) passed as phrase adaptation sets with automatic fallback. |
-| **Gemini STT Fallback Engine** | Vertex AI Gemini (`gemini-2.5-flash`) | ✅ Completed | Optional transcription engine fallback toggleable via `TRANSCRIBE_ENGINE=gemini`. |
-| **Cross-Lingual Translation** | Vertex AI Gemini (`gemini-2.5-flash`) | ✅ Completed | Translates non-English transcripts (e.g. Tamil) to English while strictly preserving asset and equipment identifiers intact. |
-| **Authentication & Security** | FastAPI Security Header | ✅ Completed | Guarded by `X-Aegis-Key` header matching `AEGIS_API_KEY`. |
-| **In-Memory Rate Limiting** | FastAPI Middleware / Route Guard | ✅ Completed | Token bucket rate-limiting at 30 requests/minute per client IP. |
-| **Payload Size Guard** | Request Stream Validation | ✅ Completed | Enforces a strict 10MB maximum file size, returning `413 Payload Too Large`. |
-| **Cloud Run Deployment** | GCP Cloud Run (`asia-southeast1`) | ✅ Completed | Fully deployed and serving live traffic with dedicated IAM Service Account (`baton-api`). |
-| **CI/CD Pipeline** | Google Cloud Build (`cloudbuild.yaml`) | ✅ Completed | Automated container build and deployment to Artifact Registry and Cloud Run. |
-| **Unit Test Coverage** | Pytest Test Suite (`tests/test_transcribe.py`) | ✅ Completed | 9/9 passing tests with mocked Google Cloud and Vertex AI clients. |
-| **Sandglass Document Grounding** | Cloud Run (`/sandglass`) | ✅ Completed | Document search (BM25 + Vertex AI embeddings) + Gemma/Gemini citation answers. |
+</div>
 
 ---
 
-## 🎙️ Speech Transcription API (`/api/transcribe`)
+## Watch the 10-second teaser
 
-### Live Endpoint
-* **Base URL**: `https://baton-api-545013329202.asia-southeast1.run.app`
-* **Path**: `POST /api/transcribe`
-* **Auth Header**: `X-Aegis-Key: <AEGIS_API_KEY>`
+<video src="https://github.com/Eternauts/baton/raw/Baton-Cloud/docs/media/baton-teaser.mp4" poster="docs/media/baton-teaser-poster.jpg" controls muted width="100%"></video>
 
-### Request Parameters (`multipart/form-data`)
-| Field | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `audio` | File | Yes | Audio recording (`.wav`, `.m4a`, `.mp3`, max 10MB). |
-| `client_request_id` | String | No | Client-supplied tracing identifier. |
-| `languages` | String | No | Comma-separated BCP-47 language codes or `auto` (default). |
-| `asset_hints` | String | No | Comma-separated equipment tags (e.g., `P-201B, TK-104`). |
+[![Baton teaser](docs/media/baton-teaser-poster.jpg)](docs/media/baton-teaser.mp4)
 
-### Response Schema (`200 OK`)
-```json
-{
-  "request_id": "flutter-client-01",
-  "text": "Pump P201B is vibrating heavily and the seal looks wet.",
-  "language": "en",
-  "english_text": null,
-  "engine": "chirp3",
-  "model": "chirp_3",
-  "audio_seconds": 1.62,
-  "latency_ms": 3558,
-  "no_speech": false
-}
+<sub>If the player does not load, click the picture to open the video.</sub>
+
+**Storyboard**
+
+- **Shot 1 (0–2s):** Offshore oil rig technician in an orange coverall, white hard hat and safety glasses on a steel walkway at golden hour, derrick and calm sea behind. They say: *"Minor oil leak near pump station three."*
+- **Shot 2 (2–4s):** Chemical plant operator in a flame-resistant suit and face shield beside glowing pipe racks at dusk. They say: *"Pressure reading high on line four."*
+- **Shot 3 (4–6s):** Miner with a headlamp and hi-vis vest in a tunnel lit by work lights. They say: *"Loose rock on the east wall."*
+- **End card (6–8s):** The screen cuts to a deep navy background. A cyan and white pipe-shaped letter "B" logo assembles itself from flowing pipe lines with a soft glow, then the word "Baton" fades in beside it, followed by the tagline *"Speak it. Hand it over."* in clean white sans-serif type. The amber glow of the microphone button fades into a subtle light behind the logo. Smooth, minimal, premium motion graphics.
+
+---
+
+## Try it in one click
+
+| | Link | What you can do |
+|---|---|---|
+| **Baton app** (website, same code as the Android app) | https://baton-app-vapgvudrgq-as.a.run.app | Type or speak a note, review what the AI read, submit, watch it sync, then run the **Handover** interview with a supervisor read-back |
+| **Control Room** (supervisor dashboard) | https://baton-api-545013329202.asia-southeast1.run.app/dashboard | See every sync, the rule conflicts, the architecture live, the agent trace, and ask the logs. Unlock the agent screens with the supervisor key |
+
+A good first run: open the app, tap the keyboard icon, type *"Pump P-201B is isolated and locked out"*, tap **Check what was read**, then **Submit**. The server finds a CRITICAL isolation mismatch (the plant feed says P-201B is still OPEN). Open the **Handover** tab, answer the questions, and read the critical item back as the incoming supervisor. Then open the dashboard and watch the same event, its agent trace and its cited brief.
+
+> The plant feed is **simulated** (`backend/app/plant_data.py`). Rule R4 (an expired permit) is always open in it, so it appears in every brief.
+
+---
+
+## Why Baton
+
+Most process-safety accidents at shift change come from one thing: what the outgoing shift *believes* is not what the plant *is*. A lock-out that was "applied" but is still open. A hot-work permit next to a live gas line.
+
+> **Rules decide, Gemini reads and explains, people accept.**
+
+- **Rules decide.** Safety verdicts come only from deterministic code (`backend/app/rules.py`). A model can add concerns; it can never remove, soften or contradict a rule verdict, and it can never say a conflict is clear while one is open.
+- **Gemini reads and explains.** It reads spoken notes in any language, retrieves the relevant procedures, explains each verdict with citations, and writes the incoming-shift brief.
+- **People accept.** Acknowledging an alert is a supervisor action and is recorded as *acknowledged*, never *resolved*. A handover cannot be transferred until the incoming supervisor has read every CRITICAL item back in their own words.
+
+## How it works
+
+```
+Baton app (Android + web) ──sync──▶ baton-api (Cloud Run)
+   speak / type a note                │ 1. rules R1–R4 against the plant feed (deterministic)  ← answers in ~0.3 s
+   on-device Gemma (Android)          │ 2. save to Firestore, 3. publish "handover.synced"
+   or server model (web)              ▼
+                               Pub/Sub ──push (OIDC)──▶ baton-agents (Cloud Run, private)
+                                                          ADK pipeline: Intake → SOP + history retrieval (vector search)
+                                                          → RulesGate → SafetyCrossCheck → Briefing → Distill
+                                                          (guardrails check every model output)
+Control Room dashboard ◀── stream: events, conflicts, briefs, agent traces
+Ask the logs · Handover interview · Device alerts
 ```
 
-### Measured Latency (Live Cloud Run)
-| Test Audio File | Duration | Detected Language | Cloud Run Latency | Transcription Output |
-| :--- | :---: | :---: | :---: | :--- |
-| **[Baton-Test-English.m4a](file:///Users/kesevan/Desktop/AIbuilder/Ethernauts/baton-mvp/backend/Baton-Test-English.m4a)** | 1.62s | `en` | **~3.55s** | *"Pump P201B is vibrating heavily and the seal looks wet."* |
-| **[Baton-Test-Tamil.m4a](file:///Users/kesevan/Desktop/AIbuilder/Ethernauts/baton-mvp/backend/Baton-Test-Tamil.m4a)** | 1.88s | `en` / `ta-IN` | **~3.97s** | *"pump P201B"* |
+| Cloud Run service | What it is |
+|---|---|
+| `baton-app` | The Baton website (Flutter web build behind nginx) |
+| `baton-api` | API (sync, ask, extract, interview, transcription) and the Control Room dashboard |
+| `baton-agents` | Private worker that runs the multi-agent pipeline from Pub/Sub |
 
----
+Deeper detail (agents, tools, guardrails, data model, evaluation): [backend/AGENTS.md](backend/AGENTS.md).
 
-## 💻 Local Development
+## What's in it
 
-1. **Set up the virtual environment**:
-   ```bash
-   cd backend
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
+| Capability | How |
+|---|---|
+| **Voice and typed notes** | On-device Gemma 4 (Android) or the server's Gemini Flash-Lite (web, or phones without the model); cloud transcription (Gemini or Chirp 3) with translation that keeps asset tags intact |
+| **Review before submit** | The worker sees what the AI read (asset, state) and can correct it; the corrected facts are what is saved |
+| **Deterministic safety rules** | R1 isolation mismatch, R2 simultaneous operations, R3 interlock bypass, R4 expired permit |
+| **Multi-agent pipeline** | Google ADK: SOP and history retrievers, rules gate, safety cross-check, briefing agent, all with stage time budgets and deterministic fallbacks |
+| **Vector knowledge store** | Firestore vector search (768-d, cosine) over SOPs, bulletins and earlier handovers |
+| **Guardrails** | Verdict lock, no false all-clear, citations must exist, advisory items capped at WARNING; all logged in the trace |
+| **Interview handover** | One question per distinct open conflict, a cited brief, a supervisor read-back for every CRITICAL item, a gated transfer |
+| **Ask the logs** | Natural-language questions answered only from retrieved evidence, in the question's language (English, Tamil, Malay verified) |
+| **Control Room** | Overview, living architecture, telemetry, audit trail, agent trace, debug console |
+| **Idempotent sync** | The same capsules always map to the same handover, so a retry never creates a second event or agent run |
+| **Two-key security** | The supervisor key is for dashboard actions; a separate demo key ships inside the public app and opens the app endpoints only |
 
-2. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   ```
+### Measured on the live service
 
-3. **Run the Backend locally**:
-   ```bash
-   uvicorn app.main:app --reload --port 8080
-   ```
+| Measure | Result |
+|---|---|
+| Retrieval: expected source in top 6 | 12 / 12 |
+| Answer cites an expected source | 12 / 12 |
+| Rule verdicts preserved in briefs | 3 / 3 |
+| Off-topic questions declined cleanly | 2 / 2 |
+| Ask latency | median 6.4 s, p90 11.5 s |
+| Pipeline latency | median 11.9 s (single runs) |
+| Load: 20 syncs in a minute | 20 / 20 succeeded, 0 duplicates, 0 lost |
+| Tests | 175 backend, 17 app |
 
-4. **Run Unit Tests**:
-   ```bash
-   PYTHONPATH=. pytest tests/test_transcribe.py
-   ```
+## Repository layout
 
----
+```
+backend/        FastAPI service, ADK agents, rules, knowledge store, tests, eval, deploy scripts
+  app/            main.py (API), rules.py, agents/ (pipeline, ask, guardrails), knowledge/, pipeline/, static/dashboard.html
+  scripts/        deploy.sh (canary | promote | agents), setup_web.sh, setup_pubsub.sh, ingest_sops.py, seed_handovers.py
+aegis_flow/     The Flutter app: one codebase for Android and the web
+  lib/            core/ (AI, platform, config), data/, features/ (report, feed, handover), ui/
+  web_hosting/    Dockerfile + nginx config for the website service
+  scripts/        deploy_web.sh
+sandglass/      Separate document-grounded answer service for constrained links
+docs/media/     Teaser video and poster
+```
 
-## ☁️ Google Cloud Deployment
+## Run it locally
 
-Deploy directly using `gcloud` or through Cloud Build:
+**Backend**
 ```bash
-gcloud run deploy baton-api \
-  --source ./backend \
-  --region asia-southeast1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --service-account baton-api@ai-builder-cup-2026-509818.iam.gserviceaccount.com \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=ai-builder-cup-2026-509818,TRANSCRIBE_ENGINE=chirp3,SPEECH_LOCATION=us,GEMINI_MODEL=gemini-2.5-flash,AEGIS_API_KEY=dev-key
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env            # then fill in your project and models
+uvicorn app.main:app --reload --port 8080
+pytest -q                       # 175 tests, no network
 ```
+
+**App** (Flutter)
+```bash
+cd aegis_flow
+flutter pub get
+flutter test --dart-define=AEGIS_API_KEY=test
+flutter run --dart-define=AEGIS_API_KEY=<demo key>                                   # Android
+flutter run -d chrome --dart-define=AEGIS_API_KEY=<demo key> --dart-define=BACKEND_URL=<api url>   # web
+```
+
+## Deploy
+
+```bash
+backend/scripts/setup_web.sh           # once: creates the demo key for the public app
+backend/scripts/deploy.sh canary       # API: new revision at 0% traffic
+backend/scripts/deploy.sh promote      # send traffic to it
+backend/scripts/deploy.sh agents       # the Pub/Sub worker, from the same image
+aegis_flow/scripts/deploy_web.sh       # the website, built from the same code as the Android app
+```
+
+Android and the website build from the same `aegis_flow` code, so a change to the app reaches both.
+
+## Security notes
+
+- `AEGIS_API_KEY` (supervisor) and `AEGIS_DEMO_KEY` (public app) live in Secret Manager. Never build a public website or APK with the supervisor key.
+- Audio, full transcripts and keys are never logged; logs carry ids, counts, latencies and status codes.
+- The public app can call model-backed endpoints through the demo key. Rate limiting is on, and a budget alert on the project is recommended for the judging period.
+
+## Known limitations
+
+- The plant feed is simulated, not live telemetry, and the dashboard says so. Rule R3 does not fire on it, and R4 is always open.
+- Open conflicts are unit-wide, not per asset.
+- Model latency has an occasional tail; stage time budgets turn it into a deterministic fallback, never a missing verdict.
+- The Android app uses the on-device model only when it is installed (a large download); otherwise it uses the server model.
+
+Full list: [backend/AGENTS.md, section 9](backend/AGENTS.md).
+
+## Other services in this repo
+
+**Sandglass** (`sandglass/`) is a separate Cloud Run service: the on-device Gemma model sends short questions over a constrained link, and Sandglass searches the document corpus (rule-based expansion, BM25 and Vertex AI embeddings), has Gemini answer with verified citations, and returns a compact answer with a calibrated confidence. See [sandglass/README.md](sandglass/README.md).
 
 ---
 
-## 🔍 Sandglass: document-grounded answers for on-device Gemma (`/sandglass`)
-A separate, self-contained Cloud Run service. The on-device Gemma model sends short questions over a constrained link. Sandglass searches the document corpus (rule-based expansion + BM25 + Vertex AI embeddings), has Gemini answer with verified citations, and returns a compact, byte-budgeted answer with a calibrated confidence.
-Deploy with `PROJECT_ID=... ./sandglass/scripts/deploy.sh`. See [sandglass/README.md](sandglass/README.md).
-
+<div align="center"><sub>Built by Team ETERNAUTS for the Google Cloud AI Builder Cup 2026.</sub></div>
