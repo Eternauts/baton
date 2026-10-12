@@ -86,6 +86,9 @@ class HandoverRepository {
     await prefs.setBool(_offlineModeKey, isOffline);
   }
 
+  /// This install's id, as the server knows it.
+  Future<String> deviceId() => _getDeviceId();
+
   Future<String> _getDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
     var devId = prefs.getString(_deviceIdKey);

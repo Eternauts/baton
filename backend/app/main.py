@@ -55,6 +55,9 @@ async def lifespan(_: FastAPI):
     def _warm():   # importing ADK takes a few seconds; do it now so the first question does not pay for it
         try:
             import app.agents.ask  # noqa: F401
+            import app.agents.query  # noqa: F401
+            from app.knowledge.embed import embed_query
+            embed_query("warm up")   # opens the embedding connection, so the first worker question is not the slow one
         except Exception as err:  # noqa: BLE001
             logger.warning("ask warm-up failed: %s", type(err).__name__)
     threading.Thread(target=_warm, daemon=True).start()

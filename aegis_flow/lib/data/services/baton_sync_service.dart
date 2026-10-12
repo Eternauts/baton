@@ -29,6 +29,7 @@ class BatonSyncService {
 
       final payload = {
         "device_id": deviceId,
+        "unit_name": AppConfig.defaultUnit, // so synced notes meet the same unit's procedures, history and open conflicts
         "capsules": pendingCapsules.map((c) {
           final fact = c.facts.isNotEmpty ? c.facts.first : null;
           final severity = c.escalation.level >= 2 

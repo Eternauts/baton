@@ -250,3 +250,24 @@ What differs on the web (all behind `lib/core/platform/platform_support.dart` an
 - **Load time:** built with `--no-web-resources-cdn` (everything comes from `baton-app`, no third-party CDN), nginx gzip-compresses
   it (about a third of the raw size), and files are served with `Cache-Control: no-cache` plus `--pwa-strategy=none`, so a redeploy reaches visitors on their next load.
 - **Device ids:** web visitors register as `web-<id>`, Android phones as `android-<id>`.
+
+## 12. Query mode: answers from the documents, on the spot (`app/agents/query.py`)
+
+For a worker with a doubt, or working under a permit. It is deliberately not an agent loop, so it is fast: the **documents come back first**
+(`POST /api/v1/search`, about 0.8 s, vector search only), then **one model call** writes the answer (`POST /api/v1/query`, about 3 to 4 s on the live documents).
+
+| Endpoint (app key) | Returns |
+|---|---|
+| `GET /api/v1/permits` | The active permits (from the simulated permit register): id, type, title, status, expired |
+| `POST /api/v1/search` `{query, permit_id?}` | The matching documents, grouped, each with its best section and a snippet |
+| `POST /api/v1/query` `{question, unit, asset_tag?, permit_id?, language?}` | `answer`, `steps` (ordered), `cautions`, `follow_ups`, `citations` (with snippets), `rule_verdicts`, `permit`, `permit_alert`, `confidence_note`, `fallback`, `latency_ms` |
+| `GET /api/v1/docs` / `GET /api/v1/docs/{chunk_id}` | The searchable documents / one section in full, so a worker can read the exact wording |
+
+How it stays trustworthy (same guardrails as Ask, applied to every string in the answer, steps and cautions):
+- Retrieval, open conflicts and plant readings are fetched by code in parallel; the model sees only those sources and is told to say "no matching record" rather than guess.
+- **Code supplies the safety facts:** `rule_verdicts` are the unit's open conflicts, quoted unchanged (the app shows them in their own strip); an **expired permit** adds a `permit_alert` regardless of what the model wrote.
+- No claim that work is safe or clear while a conflict is open (a violation withholds the answer and shows the retrieved records instead); citations must have been retrieved; raw chunk ids are stripped.
+- A selected permit steers the search (its title and a per-type topic list, `PERMIT_TOPICS`) and is part of the prompt, so "what exactly do I need to do?" is answered for that job.
+- A model failure, a timeout (14 s) or bad JSON (retried once) falls back to the retrieved records. Runs are traced like Ask runs (`ask-` ids), so they appear in the dashboard's Agent Trace.
+
+The assistant can only answer from what is ingested: add documents with `scripts/ingest_sops.py` (the corpus bucket, `corpus/*.md`). The demo corpus is 8 documents.

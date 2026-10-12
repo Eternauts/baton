@@ -5,6 +5,9 @@ class AppConfig {
   /// Android and the website (a separate service, baton-app) both talk to the live API. BACKEND_URL overrides it, for a local server.
   static String get backendUrl => _backendOverride.isNotEmpty ? _backendOverride : _liveBackend;
 
+  /// The plant unit this app reports for and asks about. The simulated plant (and the seeded procedures and history) is one unit.
+  static const String defaultUnit = String.fromEnvironment('BATON_UNIT', defaultValue: 'HYDROCRACKER-01');
+
   // No default: build with --dart-define=AEGIS_API_KEY=<key>. Without it, cloud ASR
   // reports "No backend config" instead of sending a key the server will reject.
   // The website must be built with the DEMO key: it ships inside the page, so it must never be the supervisor key.

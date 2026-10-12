@@ -1,15 +1,7 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../core/config/app_config.dart';
+import 'api_client.dart';
 
-/// A readable failure for the screen: what went wrong, and whether trying again can help.
-class InterviewException implements Exception {
-  final String message;
-  final bool retryable;
-  InterviewException(this.message, {this.retryable = true});
-  @override
-  String toString() => message;
-}
+/// Kept as a name for the interview's failures; it is the shared API error.
+typedef InterviewException = ApiException;
 
 class InterviewConflict {
   final String ruleId, title, description, severity, status;
@@ -81,31 +73,9 @@ class PipelineBrief {
 }
 
 class HandoverInterviewService {
-  Map<String, String> get _headers => {'Content-Type': 'application/json', 'X-Aegis-Key': AppConfig.aegisApiKey};
-  Uri _u(String path) => Uri.parse('${AppConfig.backendUrl}$path');
-
-  Future<Map<String, dynamic>> _send(String method, String path, {Object? body, int timeoutSec = 20}) async {
-    if (!AppConfig.hasBackendConfig) {
-      throw InterviewException('This build has no server key, so the handover cannot reach the server.', retryable: false);
-    }
-    try {
-      final req = http.Request(method, _u(path))..headers.addAll(_headers);
-      if (body != null) req.body = jsonEncode(body);
-      final res = await http.Response.fromStream(await req.send().timeout(Duration(seconds: timeoutSec)));
-      final data = res.body.isEmpty ? <String, dynamic>{} : (jsonDecode(res.body) as Map<String, dynamic>);
-      if (res.statusCode == 200) return data;
-      final detail = data['detail'];
-      final text = detail is String ? detail : (detail is Map ? (detail['error']?['message']?.toString() ?? '') : '');
-      if (res.statusCode == 401) throw InterviewException('The server rejected this app\'s key.', retryable: false);
-      if (res.statusCode == 409 || res.statusCode == 422) throw InterviewException(text.isEmpty ? 'The server did not accept that.' : text, retryable: false);
-      if (res.statusCode == 404) throw InterviewException('That handover is no longer on the server.', retryable: false);
-      throw InterviewException('The server had a problem (${res.statusCode}). Try again.');
-    } on InterviewException {
-      rethrow;
-    } catch (_) {
-      throw InterviewException('No connection to the server. Check the network and try again.');
-    }
-  }
+  final ApiClient _api = ApiClient();
+  Future<Map<String, dynamic>> _send(String method, String path, {Object? body, int timeoutSec = 20}) =>
+      _api.send(method, path, body: body, timeoutSec: timeoutSec);
 
   Future<InterviewSession> interview(String id, {String language = 'en'}) async =>
       InterviewSession.fromMap(await _send('POST', '/api/handover/$id/interview?language=$language', timeoutSec: 25));

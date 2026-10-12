@@ -24,6 +24,20 @@ class AskRequest(BaseModel):
     device_id: Optional[str] = Field(default=None, max_length=80)
 
 
+class QueryRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=500)
+    unit: str = Field(default="HYDROCRACKER-01", min_length=1, max_length=80)
+    asset_tag: Optional[str] = Field(default=None, max_length=40)
+    permit_id: Optional[str] = Field(default=None, max_length=40)
+    language: Optional[str] = Field(default=None, max_length=20)
+    device_id: Optional[str] = Field(default=None, max_length=80)
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500)
+    permit_id: Optional[str] = Field(default=None, max_length=40)
+
+
 class ExtractRequest(BaseModel):
     transcript: str = Field(..., min_length=1, max_length=1000)
     known_assets: list[str] = Field(default_factory=list, max_length=50)
@@ -119,6 +133,55 @@ def create_router(require_key: Callable[[Optional[str]], None], rate_ok: Callabl
     """require_key: supervisor scope (agent traces). require_app_key: what a shipped app may call (ask, device updates, extract)."""
     app_key = require_app_key or require_key
     router = APIRouter(prefix="/api/v1")
+
+    # ---- Query mode: answers from the documents, on the spot (app scope)
+    def _limited(request: Request) -> None:
+        if not rate_ok(request.client.host if request.client else "unknown"):
+            raise HTTPException(status_code=429, detail={"error": {"code": "RATE_LIMIT_EXCEEDED", "message": "Too many requests"}})
+
+    @router.get("/permits")
+    async def permits(x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+        app_key(x_aegis_key)
+        from app.agents.query import list_permits
+        return {"permits": list_permits(), "source": "simulated permit register"}
+
+    @router.post("/search")
+    async def search_docs(req: SearchRequest, request: Request, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+        app_key(x_aegis_key)
+        _limited(request)
+        from app.agents.query import search_documents
+        try:
+            return await asyncio.to_thread(search_documents, req.query.strip(), req.permit_id)
+        except Exception as err:  # noqa: BLE001 - the answer call can still work; the app shows what it has
+            logger.warning("search failed: %s", type(err).__name__)
+            raise HTTPException(status_code=502, detail={"error": {"code": "SEARCH_FAILED", "message": "The document search had a problem"}})
+
+    @router.get("/docs")
+    async def docs_catalog(x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+        app_key(x_aegis_key)
+        from app.agents.query import document_catalog
+        return {"documents": await asyncio.to_thread(document_catalog)}
+
+    @router.get("/docs/{chunk_id}")
+    async def doc_section(chunk_id: str, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+        app_key(x_aegis_key)
+        if not _CHUNK_ID.match(chunk_id):
+            raise HTTPException(status_code=400, detail="invalid chunk id")
+        out = await asyncio.to_thread(read_chunk, chunk_id)
+        if out is None:
+            raise HTTPException(status_code=404, detail="document section not found")
+        out.pop("seeded", None)
+        return out
+
+    @router.post("/query")
+    async def query(req: QueryRequest, request: Request, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
+        app_key(x_aegis_key)
+        _limited(request)
+        from app.agents.query import answer_query
+        result = await answer_query(req.question.strip(), req.unit.strip(), req.asset_tag, req.permit_id, req.language, req.device_id)
+        logger.info("query run=%s latency_ms=%s citations=%d verdicts=%d fallback=%s qchars=%d permit=%s", result["run_id"], result["latency_ms"],
+                    len(result["citations"]), len(result["rule_verdicts"]), result["fallback"], len(req.question), bool(result["permit"]))
+        return result
 
     @router.post("/extract")
     async def extract(req: ExtractRequest, request: Request, x_aegis_key: Optional[str] = Header(None, alias="X-Aegis-Key")):
