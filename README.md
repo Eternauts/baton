@@ -4,7 +4,7 @@
 
 # Baton
 
-**Speak it. Hand it over.**
+**Speak it. Baton hands it over.**
 
 A shift-handover safety system for process plants. Operators say what they saw; deterministic rules check it against the plant; Gemini agents read, explain and brief; people accept.
 
@@ -29,7 +29,7 @@ A shift-handover safety system for process plants. Operators say what they saw; 
 - **Shot 1 (0–2s):** Offshore oil rig technician in an orange coverall, white hard hat and safety glasses on a steel walkway at golden hour, derrick and calm sea behind. They say: *"Minor oil leak near pump station three."*
 - **Shot 2 (2–4s):** Chemical plant operator in a flame-resistant suit and face shield beside glowing pipe racks at dusk. They say: *"Pressure reading high on line four."*
 - **Shot 3 (4–6s):** Miner with a headlamp and hi-vis vest in a tunnel lit by work lights. They say: *"Loose rock on the east wall."*
-- **End card (6–8s):** The screen cuts to a deep navy background. A cyan and white pipe-shaped letter "B" logo assembles itself from flowing pipe lines with a soft glow, then the word "Baton" fades in beside it, followed by the tagline *"Speak it. Hand it over."* in clean white sans-serif type. The amber glow of the microphone button fades into a subtle light behind the logo. Smooth, minimal, premium motion graphics.
+- **End card (6–8s):** The screen cuts to a deep navy background. A cyan and white pipe-shaped letter "B" logo assembles itself from flowing pipe lines with a soft glow, then the word "Baton" fades in beside it, followed by the tagline *"Speak it. Baton hands it over."* in clean white sans-serif type. The amber glow of the microphone button fades into a subtle light behind the logo. Smooth, minimal, premium motion graphics.
 
 ---
 
