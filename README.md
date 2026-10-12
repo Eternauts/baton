@@ -20,6 +20,10 @@ A shift-handover safety system for process plants. Operators say what they saw; 
 
 [![Baton teaser: tap or click to watch with sound](docs/media/baton-teaser.gif)](docs/media/baton-teaser.mp4)
 
+
+https://github.com/user-attachments/assets/6137d3c3-7d6f-4327-84dd-9037bd980c18
+
+
 <sub>Silent preview, plays in a loop. The full 10-second video with sound is [docs/media/baton-teaser.mp4](docs/media/baton-teaser.mp4) (GitHub may offer it as a download).</sub>
 
 **Storyboard**
